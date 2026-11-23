@@ -1,5 +1,20 @@
 # AGENTS.md
 
+## Wheeped: read this first
+
+This repository is **Wheeped**, YanIanZ's fork of Pumpkin for Wureta Network. The engine work done here is called **Sonix**. Everything from "Pumpkin's guide" down is Pumpkin's own text, unchanged. It still applies to every file Wheeped shares with upstream; where it and this section disagree, this section wins for work in this repository.
+
+- **Remotes and branches.** `origin` is `YanIanZ/Wheeped`. `upstream` is `Pumpkin-MC/Pumpkin` and is fetch-only. `master` mirrors upstream and never takes a Wheeped commit. `main` is Wheeped's default branch.
+- **Pull requests stay inside the fork.** Work reaches `main` through a pull request in `YanIanZ/Wheeped`. Do not push to `main`, and do not merge a pull request unless the owner asks. In a fork, `gh` targets the parent repository by default, so always name the repository: `gh pr create --repo YanIanZ/Wheeped --base main`. Pumpkin's "Pull requests" section at the end of this file is its policy for contributions to Pumpkin, and it holds there without exception: an agent never opens a pull request, issue, review or comment on any `Pumpkin-MC` repository.
+- **Commits and PR text** are the owner's: no co-author or tool trailers in commits, no tool footer in PR bodies. Conventional commits with a scope, as described below. A PR body ends with what was verified and what was not.
+- **Where Wheeped code goes.** New code goes into `crates/sonix-*`. Edits to Pumpkin's own files are kept to narrow hooks and are listed in [docs/sonix/UPSTREAM.md](docs/sonix/UPSTREAM.md), because every changed upstream line is a possible conflict at the next upstream merge. Add the file to that list in the same change.
+- **Ports from SourbyCraft** follow [docs/sonix/PORT-MAP.md](docs/sonix/PORT-MAP.md): claim a unit there before starting, port it faithfully first (same structure, same error paths), and hold it to the Java original with tests that would fail if the behaviour differed. Names come from [docs/sonix/GLOSSARY.md](docs/sonix/GLOSSARY.md); decisions from [docs/sonix/DECISIONS.md](docs/sonix/DECISIONS.md). A proposed decision is not an accepted one.
+- **Say what is true.** Compiled is not tested. A unit test is not a game test. Nothing is "qualified" because it builds, boots or passed once. A planned subsystem is described as planned. A performance statement names the workload, hardware, configuration and statistic, or it is not made. When code and a document disagree, read the code and fix the document in the same change.
+- **Testing in game, server boots and benchmarks belong to the owner.** Report each change as exactly what it was: compiled only, unit-tested, or checked against the Java original, and name what nobody has run.
+- **Nothing private in this repository.** It is public. Server addresses, panel ids, credentials, player data and the network's plugin inventory stay out of it.
+
+## Pumpkin's guide
+
 Notes for coding agents working on Pumpkin. Humans are welcome to read it too. [CONTRIBUTING.md](CONTRIBUTING.md) still applies. If a maintainer or the person you're working for tells you something different from this file, do what they say, with one exception: agents never open pull requests, even when asked. See the last section.
 
 ## What Pumpkin is

@@ -1,126 +1,81 @@
 <div align="center">
 
-# Pumpkin
+# Wheeped
 
-[![CI](https://github.com/Pumpkin-MC/Pumpkin/actions/workflows/rust.yml/badge.svg)](https://github.com/Pumpkin-MC/Pumpkin/actions/workflows/rust.yml)
-[![Discord](https://img.shields.io/discord/1268592337445978193.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/wT8XjrjKkf)
-[![License: GPL](https://img.shields.io/badge/License-GPLv3-yellow.svg)](https://opensource.org/licenses/gpl-3-0)
+A Minecraft server in Rust on the **Sonix** engine, built for Wureta Network.
+Wheeped is a fork of [Pumpkin](https://github.com/Pumpkin-MC/Pumpkin).
 
-[Website](https://pumpkinmc.org/) • [Download](https://pumpkinmc.org/download/) • [Docs](https://docs.pumpkinmc.org/) • [Discord](https://discord.gg/wT8XjrjKkf)
-
-</div>
-
-[Pumpkin](https://pumpkinmc.org/) is a Minecraft server built entirely in Rust, offering a fast, efficient,
-and customizable experience. It prioritizes performance and player enjoyment while adhering to the core mechanics of the game.
-<div align="center">
-
-![Pumpkin Chunk Loading](./assets/pumpkin-chunk-loading.webp)
+[![License: GPL](https://img.shields.io/badge/License-GPLv3-yellow.svg)](LICENSE)
 
 </div>
 
 > [!IMPORTANT]
-> Pumpkin is currently under heavy development.
->
-> [See what needs to be done before the 1.0.0 Release](https://github.com/Pumpkin-MC/Pumpkin/issues/449)
+> Wheeped is under heavy development and is **not qualified for production**.
+> Almost everything a player sees today is Pumpkin's work. What Wheeped adds on top is listed, with
+> its real status, in [docs/sonix/ARCHITECTURE.md](docs/sonix/ARCHITECTURE.md).
 
-## Quick Start
+## What Wheeped is
 
-Install on Linux / macOS:
+- **Wheeped** is the server. **Sonix** is the name of the engine work done in this fork: world
+  storage, player profiles, the services a network of servers needs, and the API that first-party
+  plugins are written against.
+- It starts from Pumpkin, a Minecraft server written from scratch in Rust, and follows it: Pumpkin's
+  `master` is mirrored here untouched, and Wheeped's changes live on `main` beside it so upstream
+  work keeps merging in.
+- The systems that come from [SourbyCraft](https://github.com/YanIanZ/SourbyCraft) (Aurora World
+  Fabric, MultiProfile and others) are being ported from Java to Rust, unit by unit, each held to the
+  behaviour of the Java original. Progress is in [docs/sonix/PORT-MAP.md](docs/sonix/PORT-MAP.md).
+
+Wheeped does not load Bukkit, Paper or Fabric plugins. Plugins are written in Rust.
+
+## Build and run
+
+Rust stable (see `rust-toolchain.toml`; the workspace needs at least the version in `Cargo.toml`).
 
 ```sh
-curl -sSfL https://pumpkinmc.org/install.sh | sh
+cargo check --locked -p pumpkin        # compile check
+cargo run --locked -p pumpkin          # debug server, writes config and worlds into the working directory
+cargo run --locked --release -p pumpkin
 ```
 
-Or grab a prebuilt binary from the [Download page](https://pumpkinmc.org/download/) (also available on [GitHub Releases](https://github.com/Pumpkin-MC/Pumpkin/releases)). See the [Quick Start guide](https://docs.pumpkinmc.org/#quick-start) and [Documentation](https://docs.pumpkinmc.org/) for setup details.
+The crates and the binary still carry Pumpkin's names (`pumpkin-*`); see
+[docs/sonix/UPSTREAM.md](docs/sonix/UPSTREAM.md) for why.
 
-## Goals
+Two defaults differ from Pumpkin on purpose: telemetry and the update checker are **off**. Both
+talk to Pumpkin's services, and a fork should not report into upstream's statistics or advertise
+upstream's releases as its own.
 
-- **Performance**: Leveraging multi-threading for maximum speed and efficiency.
-- **Compatibility**: Supports the latest Java & Bedrock Minecraft server version while adhering to vanilla game mechanics.
-- **Security**: Prioritizes security by preventing known security exploits.
-- **Flexibility**: Highly configurable, with the ability to disable unnecessary features.
-- **Extensibility**: Provides a foundation for plugin development.
+## Documentation
 
-## Features
+| Document | What it covers |
+| :-- | :-- |
+| [docs/sonix/ARCHITECTURE.md](docs/sonix/ARCHITECTURE.md) | What Sonix is, what exists today and what is only planned |
+| [docs/sonix/DECISIONS.md](docs/sonix/DECISIONS.md) | Decision records: accepted, and proposed ones waiting for the owner |
+| [docs/sonix/PORT-MAP.md](docs/sonix/PORT-MAP.md) | The Java to Rust port: units, order, state |
+| [docs/sonix/GLOSSARY.md](docs/sonix/GLOSSARY.md) | Domain terms and their names in Rust |
+| [docs/sonix/UPSTREAM.md](docs/sonix/UPSTREAM.md) | Following Pumpkin: branches, merges, the list of touched upstream files |
+| [AGENTS.md](AGENTS.md) | Rules for coding agents: Wheeped's first, then Pumpkin's |
 
-- [x] Configuration (toml)
-- [Tracking: Protocol](https://github.com/Pumpkin-MC/Pumpkin/issues/1401)
-  - [x] Server Status/Ping
-  - [x] Encryption
-  - [x] Packet Compression
-  - [x] Java Edition
-  - [x] Bedrock Edition (W.I.P)
-  - ...
-- [Tracking: World](https://github.com/Pumpkin-MC/Pumpkin/issues/1403)
-  - [x] Player Tab-list
-  - [x] Scoreboard
-  - [x] World Loading
-  - [x] World Time
-  - [x] World Borders
-  - [x] World Saving
-  - [x] Lighting
-  - [x] Entity Spawning
-  - [x] Bossbar
-  - [x] Chunk Loading (Vanilla, Linear, Pump)
-  - [Chunk Generation](https://github.com/Pumpkin-MC/Pumpkin/issues/36)
-  - [x] Chunk Saving (Vanilla, Linear, Pump)
-  - [Redstone](https://github.com/Pumpkin-MC/Pumpkin/issues/1402)
-  - [x] Liquid Physics
-  - ...
-- [Tracking: Player](https://github.com/Pumpkin-MC/Pumpkin/issues/1405)
-  - [x] Skins
-  - [x] Teleport
-  - [x] Movement
-  - [x] Animation
-  - [x] Inventory
-  - [Combat](https://github.com/Pumpkin-MC/Pumpkin/issues/1404)
-  - [x] Experience
-  - [x] Hunger
-  - [X] Off Hand
-  - [X] Advancements (W.I.P)
-  - [x] Eating
-  - ...
-- Entities
-  - [x] Non-Living (Minecart, Eggs...) (W.I.P)
-  - [x] Entity Effects
-  - [x] Players
-  - [x] Mobs (W.I.P)
-  - [x] Animals (W.I.P)
-  - [Entity AI](https://github.com/Pumpkin-MC/Pumpkin/issues/1406)
-  - [x] Boss (W.I.P)
-  - [x] Villagers (W.I.P)
-  - [X] Entity Saving
-- Server
-  - [Plugins](https://github.com/Pumpkin-MC/Pumpkin/issues/1407)
-  - [x] Query
-  - [x] [Minecraft Server Management Protocol (MSMP)](https://minecraft.wiki/w/Minecraft_Server_Management_Protocol)
-  - [x] Inventories
-  - [x] Particles
-  - [x] Chat
-  - [Commands](https://github.com/Pumpkin-MC/Pumpkin/issues/15)
-  - [x] Permissions
-  - [x] Translations
-- Proxy
-  - [x] [BungeeCord](https://github.com/SpigotMC/BungeeCord)
-  - [x] [BungeeGuard](https://github.com/lucko/BungeeGuard)
-  - [x] [Velocity](https://github.com/PaperMC/Velocity)
+Pumpkin's own documentation at [docs.pumpkinmc.org](https://docs.pumpkinmc.org/) describes the
+server Wheeped is built on.
 
-<!-- Check out our [Github Project](https://github.com/orgs/Pumpkin-MC/projects/3) to see current progress. -->
+## Issues and support
 
-## Contributions
+Report Wheeped problems in this repository's issue tracker. Please do not take them to Pumpkin's
+tracker or Discord: its maintainers do not support forks, and a bug seen on Wheeped has to be
+reproduced on unmodified Pumpkin before it is theirs.
 
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md)
+## License and attribution
 
-## Communication
+Wheeped is a modified version of Pumpkin, forked on 2026-11-23 from commit
+[`a49be4bee`](https://github.com/Pumpkin-MC/Pumpkin/commit/a49be4bee2113e4cf812de3117c61bc3e9d06d3f).
+Every change since then is in this repository's history (`git log master..main`).
 
-Consider joining [our Discord server](https://discord.gg/wT8XjrjKkf) to stay up-to-date on events, updates, and connect with other members.
+- **Server** (Pumpkin's crates and Wheeped's `sonix-*` crates): [GNU General Public License v3.0](LICENSE).
+- **Plugin API** (`pumpkin-plugin-api`, `pumpkin-plugin-wit`): dual-licensed
+  [MIT](crates/pumpkin-plugin-api/LICENSE-MIT) OR [Apache-2.0](crates/pumpkin-plugin-api/LICENSE-APACHE), as upstream.
+- **Third-party assets and data**: Bedrock mappings, protocol conversion data and Minecraft assets
+  keep their own licenses and attribution terms, see [assets/NOTICE.md](assets/NOTICE.md).
 
-## Funding
-
-If you want to fund me and help the project, check out the [Donation Page](https://pumpkinmc.org/donate/).
-
-## License & Attribution
-
-* **Pumpkin Server**: Licensed under the [GNU General Public License v3.0 (GPLv3)](LICENSE).
-* **Plugin API (`pumpkin-plugin-api` & `pumpkin-plugin-wit`)**: Dual-licensed under [MIT](crates/pumpkin-plugin-api/LICENSE-MIT) OR [Apache-2.0](crates/pumpkin-plugin-api/LICENSE-APACHE) for maximum flexibility when writing plugins.
-* **Third-Party Assets & Data**: Bedrock mappings, protocol conversion data, and Minecraft assets are subject to their respective licenses and attribution terms. See [assets/NOTICE.md](assets/NOTICE.md) for full details.
+Pumpkin is the work of its [contributors](https://github.com/Pumpkin-MC/Pumpkin/graphs/contributors).
+If Wheeped is useful to you, consider [supporting Pumpkin](https://pumpkinmc.org/donate/).
