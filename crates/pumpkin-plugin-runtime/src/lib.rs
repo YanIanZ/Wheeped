@@ -17,6 +17,9 @@ pub(crate) use chain::MAX_SYNC_REENTRY_DEPTH;
 #[cfg(test)]
 #[allow(clippy::expect_used, clippy::panic, clippy::unwrap_used)]
 mod tests {
+    // Wheeped: the budgets for a call to complete are 30 s and 120 s below where Pumpkin has 2 s
+    // and 10 s. The Android emulator of the CI can need more than 2 s for one of these calls. A
+    // budget only bounds how long a hang takes to be reported.
     use std::{
         ops::Deref,
         sync::{
@@ -317,7 +320,7 @@ mod tests {
     async fn legacy_root_admission_is_fifo_and_cancellation_safe_across_domains() {
         for mode in MODES {
             timeout(
-                Duration::from_secs(10),
+                Duration::from_secs(120),
                 root_admission_lifecycle_scenario(mode),
             )
             .await
@@ -767,7 +770,7 @@ mod tests {
         assert!(driver_slot.set(driver.clone()).is_ok());
 
         timeout(
-            Duration::from_secs(2),
+            Duration::from_secs(30),
             driver.call_guest(move |mut context| {
                 assert!(
                     !context.is_reentrant(),
@@ -849,7 +852,7 @@ mod tests {
         assert!(driver_slot.set(driver.clone()).is_ok());
 
         timeout(
-            Duration::from_secs(2),
+            Duration::from_secs(30),
             driver.call_guest(move |mut context| {
                 Box::pin(async move { context.call(run, ()).await })
             }),
@@ -1049,7 +1052,7 @@ mod tests {
         );
 
         start_callback.notify_one();
-        timeout(Duration::from_secs(2), callback_completed.notified())
+        timeout(Duration::from_secs(30), callback_completed.notified())
             .await
             .expect("callback was rejected during shutdown");
         outer.await.expect("outer task").expect("outer guest call");
@@ -1264,7 +1267,7 @@ mod tests {
         );
 
         release_first_root.notify_one();
-        timeout(Duration::from_secs(2), async {
+        timeout(Duration::from_secs(30), async {
             first_root
                 .await
                 .expect("first root task")
@@ -1300,7 +1303,7 @@ mod tests {
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn legacy_reentry_routes_complete() {
         assert_synchronous_reentry_depth_is_bounded_and_recovers();
-        timeout(Duration::from_secs(10), async {
+        timeout(Duration::from_secs(120), async {
             sync_lifted_same_instance_reentry_completes().await;
             blocking_host_operation_propagates_the_reentry_chain().await;
             unrelated_guest_call_waits_for_the_active_chain().await;
@@ -1352,7 +1355,7 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn active_context_recursion_is_bounded_and_releases_admission() {
-        timeout(Duration::from_secs(10), async {
+        timeout(Duration::from_secs(120), async {
             let mode = StoreMode::Concurrent;
             for blocking in [false, true] {
                 {
@@ -1421,7 +1424,7 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn shutdown_drains_accepted_work() {
-        timeout(Duration::from_secs(10), async {
+        timeout(Duration::from_secs(120), async {
             for mode in MODES {
                 shutdown_waits_for_in_flight_guest_call_and_rejects_new_work(mode).await;
                 explicit_discard_drains_accepted_work(mode).await;
@@ -1506,7 +1509,7 @@ mod tests {
         let store = TestStore::new(test_store(mode), mode).await;
         let handle = store.handle();
         let call_error = timeout(
-            Duration::from_secs(2),
+            Duration::from_secs(30),
             handle.call_guest::<(), _>(|_| panic!("intentional Store driver panic")),
         )
         .await
@@ -1592,7 +1595,7 @@ mod tests {
         assert!(driver_slot.set(driver.clone()).is_ok());
 
         let error = timeout(
-            Duration::from_secs(2),
+            Duration::from_secs(30),
             driver.call_guest(move |mut guest| Box::pin(async move { guest.call(run, ()).await })),
         )
         .await
