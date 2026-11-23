@@ -154,9 +154,12 @@ already provides before a port is planned.
    a scratch test that is not in the repository: the overworld region store of a SourbyCraft 26.2
    test server (529 chunks, data version 4903 against the base's 5023) opened in `sonix-awf` with
    every object verified, and the base's chunk parser (`ChunkData::internal_from_bytes`) took all
-   529 without an error. That shows the bytes parse. It does not show that such a world plays
-   correctly: only one of those chunks was fully generated, no data upgrade was applied, and nothing
-   was loaded into a running server.
+   529 without an error. A second reading the same day, of the Anvil region files of an older and
+   larger world (7,548 chunks, 3,151 of them fully generated, 316 block entities, data versions 4440,
+   4556 and 4790): the parser took every chunk as well. That shows the bytes parse. It does not show
+   that such a world plays correctly: no data upgrade was applied, what the parser does with blocks
+   or fields that changed between versions was not looked at, and nothing was loaded into a running
+   server.
 2. A Wureta island server holds one world per island. Several server-wide lookups in the base walk
    the world list. How that behaves with thousands of worlds is unmeasured.
 3. Paper serializes an item with `ItemStack.serializeAsBytes`; MultiProfile stores those bytes as
