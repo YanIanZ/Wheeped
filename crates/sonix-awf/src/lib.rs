@@ -2,8 +2,8 @@
 //!
 //! The FILE backend of `SourbyCraft`'s world storage, ported from Java. A chunk is a
 //! content-addressed object, a world's state is a chunk index committed as an atomic generation,
-//! and an `.awf` image carries an immutable world. The on-disk format is the one `SourbyCraft`
-//! writes, so either server can open a store the other wrote.
+//! an `.awf` image carries an immutable world, and an `.awf` world file carries a portable one. The
+//! on-disk format is the one `SourbyCraft` writes, so either server can open what the other wrote.
 //!
 //! Nothing here knows about a running server. Every call that touches the disk blocks, so callers
 //! run it off the tick.
@@ -30,8 +30,10 @@ mod role;
 mod source;
 mod store;
 mod text;
+mod world_file;
 mod world_store;
 
+pub use codec::Codec;
 pub use durability::{DISK, Disk, Durability, degraded_directory_forces, degraded_reason};
 pub use error::{AwfError, Result};
 pub use generation::{Generation, GenerationStore, Stage, StageHook};
@@ -41,6 +43,7 @@ pub use object_store::{ObjectName, ObjectStore, Written};
 pub use role::{PersistenceMode, WorldRole};
 pub use source::{ChunkSource, LayeredSource};
 pub use store::{CommitResult, Store};
+pub use world_file::{Stream as WorldFileStream, WorldFile, Writer as WorldFileWriter};
 pub use world_store::{Compaction, Entry, WorldStore};
 
 /// Locks a mutex, taking the guard even when a holder panicked.
