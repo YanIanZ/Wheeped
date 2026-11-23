@@ -334,6 +334,10 @@ fn check_snow_formation_events(
     use pumpkin_data::Block;
     use pumpkin_util::math::vector3::Vector3;
 
+    // Wheeped: the server ticks this golem as well (a mob's AI step runs with NoAI set), so
+    // formation events of its own can arrive at any point from here on. They are cancelled from
+    // before the handler exists, and the counts below are lower bounds, not exact numbers.
+    hooks.cancel.store(true, Ordering::Relaxed);
     server.plugin_manager.register::<EntityBlockFormEvent, _>(
         hooks.clone(),
         EventPriority::Normal,
@@ -360,18 +364,19 @@ fn check_snow_formation_events(
             world.set_block_state(&pos.down(), Block::STONE.default_state.id, flags);
             world.set_block_state(&pos, Block::AIR.default_state.id, flags);
         }
-        hooks.cancel.store(true, Ordering::Relaxed);
+        let before = hooks.formations.load(Ordering::Relaxed);
         golem.mob_ai_step();
-        if hooks.formations.load(Ordering::Relaxed) != 4
+        if hooks.formations.load(Ordering::Relaxed) - before < 4
             || positions
                 .iter()
                 .any(|pos| world.get_block(pos) != &Block::AIR)
         {
             return Err("Cancelled snow formation must leave all four positions unchanged".into());
         }
+        let before = hooks.formations.load(Ordering::Relaxed);
         hooks.cancel.store(false, Ordering::Relaxed);
         golem.mob_ai_step();
-        if hooks.formations.load(Ordering::Relaxed) != 8
+        if hooks.formations.load(Ordering::Relaxed) - before < 4
             || positions
                 .iter()
                 .any(|pos| world.get_block(pos) != &Block::MOSS_CARPET)
