@@ -21,9 +21,10 @@ import java.util.TreeSet;
  * {@code tests/fixtures/README.md}.
  *
  * <pre>
- * write DIR    writes java-full/, java-deltas/, java-image.awf and expected.tsv into DIR
- * verify DIR   checks rust-full/, rust-deltas/ and rust-image.awf in DIR against rust-expected.tsv,
- *              then commits one more generation on each store for the Rust side to read back
+ * write DIR    writes java-full/, java-deltas/, java-image.awf, java-world-*.awf and expected.tsv into DIR
+ * verify DIR   checks rust-full/, rust-deltas/, rust-image.awf and rust-world-*.awf in DIR against
+ *              rust-expected.tsv, then commits one more generation on each store for the Rust side
+ *              to read back
  * </pre>
  */
 public final class Fixtures {
@@ -111,6 +112,30 @@ public final class Fixtures {
             describeImage(expected, "java-image.awf", image);
         }
 
+        // Version 2 world files, one per codec. zstd needs zstd-jni on the class path.
+        for (final byte codec : new byte[] {Compression.NONE, Compression.DEFLATE, Compression.ZSTD}) {
+            final String name = "java-world-" + Compression.name(codec) + ".awf";
+            try (AwfWorldFile.Writer writer = AwfWorldFile.writer(dir.resolve(name), codec)) {
+                writer.add("region", k(0, 0), b("zero"));
+                writer.add("region", k(-1, -1), pattern(4, 9_000));
+                writer.add("region", k(3, -3), new byte[0]);
+                writer.add("region", k(Integer.MIN_VALUE, Integer.MAX_VALUE), b("corner"));
+                writer.add("entities", k(0, 0), b("cow"));
+                writer.add("poi", k(2, 2), pattern(5, 300));
+                final Map<String, String> worldMetadata = new HashMap<>();
+                worldMetadata.put("format", "awf-world");
+                worldMetadata.put("environment", "normal");
+                worldMetadata.put("seed", "-42");
+                worldMetadata.put("na\u00efve", "\u00e7\u00e0");
+                worldMetadata.put("nul", "a\u0000b");
+                worldMetadata.put("emoji", "\uD83D\uDE00");
+                writer.finish(worldMetadata);
+            }
+            try (AwfWorldFile file = AwfWorldFile.open(dir.resolve(name))) {
+                describeWorldFile(expected, name, file);
+            }
+        }
+
         Files.writeString(dir.resolve("expected.tsv"), expected.toString(), StandardCharsets.UTF_8);
     }
 
@@ -143,6 +168,17 @@ public final class Fixtures {
             final StringBuilder wanted = new StringBuilder();
             for (final String[] parts : expected.get("rust-image.awf")) wanted.append(String.join("\t", parts)).append('\n');
             check("rust-image.awf", sortedLines(wanted.toString()), sortedLines(actual.toString()));
+        }
+
+        for (final String codec : List.of("none", "deflate", "zstd")) {
+            final String name = "rust-world-" + codec + ".awf";
+            try (AwfWorldFile file = AwfWorldFile.open(dir.resolve(name))) {
+                final StringBuilder actual = new StringBuilder();
+                describeWorldFile(actual, name, file);
+                final StringBuilder wanted = new StringBuilder();
+                for (final String[] parts : expected.get(name)) wanted.append(String.join("\t", parts)).append('\n');
+                check(name, sortedLines(wanted.toString()), sortedLines(actual.toString()));
+            }
         }
     }
 
@@ -189,6 +225,22 @@ public final class Fixtures {
             final byte[] raw = image.read(key).orElseThrow();
             out.append(name).append("\tchunk\t").append(key.x()).append('\t').append(key.z()).append('\t')
                 .append(raw.length).append('\t').append(sha256(raw)).append('\n');
+        }
+    }
+
+    private static void describeWorldFile(final StringBuilder out, final String name, final AwfWorldFile file)
+        throws IOException {
+        out.append(name).append("\tstreams\t").append(String.join(",", file.streamNames())).append('\n');
+        for (final Map.Entry<String, String> entry : file.metadata().entrySet()) {
+            out.append(name).append("\tmeta\t").append(hex(b(entry.getKey()))).append('\t').append(hex(b(entry.getValue())))
+                .append('\n');
+        }
+        for (final String stream : file.streamNames()) {
+            for (final ChunkKey key : file.stream(stream).keys()) {
+                final byte[] raw = file.stream(stream).read(key).orElseThrow();
+                out.append(name).append("\tschunk\t").append(stream).append('\t').append(key.x()).append('\t')
+                    .append(key.z()).append('\t').append(raw.length).append('\t').append(sha256(raw)).append('\n');
+            }
         }
     }
 
