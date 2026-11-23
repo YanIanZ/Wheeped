@@ -37,7 +37,9 @@ is the one in `crates/sonix-*`. Add a term when a unit brings it.
 | world store | A world's committed chunks: an index per generation plus objects. | `AwfWorldStore` | `WorldStore` |
 | store | The contract every backend keeps (atomic commit, remembered deletions). | `AwfStore` | `Store` |
 | image | The `.awf` version 1 file: one immutable chunk stream with SHA-256. | `AwfFile` | `Image` |
-| world file | The `.awf` version 2 file: a whole portable world, several streams, CRC32C. | `AwfWorldFile` | `WorldFile` |
+| world file | The `.awf` version 2 file: a whole portable world, several streams, CRC32C. | `AwfWorldFile` | `WorldFile`, `WorldFileWriter` |
+| stream | One named set of chunks in a world file: `region`, `entities`, `poi`. | stream name | `WorldFileStream` |
+| codec | How one chunk of a world file is stored: none, deflate or zstd. | `Compression` ids | `Codec` |
 | world role | `VANILLA`, `VIRTUAL`, `TEMPLATE`, `INSTANCE`, `READ_ONLY`, `TEMPORARY`. | `WorldRole` | `WorldRole` |
 | persistence mode | `FULL`, `INCREMENTAL`, `CHECKPOINT`, `READ_ONLY`. | `PersistenceMode` | `PersistenceMode` |
 | durability | The seam for file force, directory force and atomic rename. | `Durability` | `Durability`, `Disk`, `DISK` |

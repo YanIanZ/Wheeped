@@ -55,19 +55,19 @@ No dependency on a running server. Target crate: `crates/sonix-awf`.
 | `GenerationStore` | 598 | atomic generation commits, manifests 1 and 2 | `generation` | done ¹ ² |
 | `AwfStore` | 69 | the contract every backend keeps | `store` | done ¹ |
 | `AwfWorldStore` | 613 | chunk index and deltas over the two stores | `world_store` | done ¹ ² |
-| `Compression` | 92 | codec ids and zstd, used by the version 2 world file | `codec` | open |
-| `AwfWorldFile` | 288 | `.awf` version 2 portable world file | `world_file` | open |
+| `Compression` | 92 | codec ids and zstd, used by the version 2 world file | `codec` | done ¹ ² |
+| `AwfWorldFile` | 288 | `.awf` version 2 portable world file | `world_file` | done ¹ ² |
 | `AwfWorld` | 574 | copy-on-write world, save pipeline, metrics | `world` | open |
 | `AwfBackend`, `AwfRegistry`, `AwfMetrics`, `LatencyRecorder` | 227 | backend selection and counters | to be placed | open |
 
 ¹ Unit tests in the module, ported from the Java tests of the same unit (`GenerationStoreTest`,
-`AwfWorldStoreTest`, `AwfFileTest`, `AwfDeltaGenerationTest`, `AwfRollbackTest`, and the store-level
-cases of `AwfDurabilityTest` and `AwfCompactionLifecycleTest`): 81 tests.
+`AwfWorldStoreTest`, `AwfFileTest`, `AwfWorldFileTest`, `AwfDeltaGenerationTest`, `AwfRollbackTest`, and
+the store-level cases of `AwfDurabilityTest` and `AwfCompactionLifecycleTest`): 90 tests.
 
 ² Held against the Java original in both directions on 2026-11-23, as
-`crates/sonix-awf/tests/fixtures/README.md` describes: Rust reads stores and an image written by the
-Build 57 classes (8 tests, part of `cargo test`), and the Java classes opened, verified and
-committed on top of stores written by Rust (run by hand, needs a JVM).
+`crates/sonix-awf/tests/fixtures/README.md` describes: Rust reads stores, an image and world files
+written by the Build 57 classes (10 tests, part of `cargo test`), and the Java classes opened and
+verified what Rust wrote and committed on top of its stores (run by hand, needs a JVM).
 
 What "done" does not cover: nothing in the server calls this crate yet, no world has been loaded
 through it, and no store from a live server has been opened with it.
@@ -87,6 +87,8 @@ differently, or where a Java-only concern has no counterpart yet.
 | Error text for a damaged object | `chunk null ...` | `object <name> ...` | The Java text is an accident of passing no key |
 | `Image::open` on a metadata string that is not modified UTF-8 | `UTFDataFormatException` | reported as corrupt | Both refuse the file |
 | `CommitResult.generation` | `long`, `-1` when the world layer had nothing to commit | `u64` | The `-1` case belongs to `AwfWorld`, which is not ported; it will be an `Option` there |
+| zstd | zstd-jni (the C library) at level 3, and only where the server has it, else deflate | a pure Rust codec at its fastest level, always present | Both write standard frames and each side decodes the other's; compressed sizes differ, and the default codec of a world file writer is always zstd here |
+| Corrupt zstd data, a duplicate or oversized chunk handed to a world file writer | plain `IOException` | `Corrupt`, or an I/O error of kind invalid input | Same family: the file or the call is refused |
 
 ### Found in the Java original while porting
 
