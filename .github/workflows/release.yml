@@ -22,6 +22,8 @@ env:
 jobs:
   build_release:
     name: Build & Sign Release
+    # Pumpkin's release needs its signing secrets. Wheeped has no release flow yet.
+    if: github.repository == 'Pumpkin-MC/Pumpkin'
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -131,6 +133,7 @@ jobs:
 
   build_android_release:
     name: Build project in release for Android (AArch64)
+    if: github.repository == 'Pumpkin-MC/Pumpkin'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

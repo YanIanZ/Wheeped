@@ -90,6 +90,11 @@ impl DaylightDetectorBlock {
 
     pub fn update_signal_strength(world: &Arc<World>, block_pos: &BlockPos) {
         let (block, state) = world.get_block_and_state(block_pos);
+        // Wheeped: the detector's block entity can still be ticked after its block was replaced.
+        // There is nothing to update then, and `to_state_id` below panics on any other block.
+        if block != &pumpkin_data::Block::DAYLIGHT_DETECTOR {
+            return;
+        }
         let mut props = DaylightDetectorProperties::from_state_id(state.id);
 
         let target = Self::calculate_signal_strength(

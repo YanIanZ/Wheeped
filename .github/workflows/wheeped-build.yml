@@ -1,0 +1,54 @@
+name: Wheeped build
+
+# A Linux binary of any branch, started by hand. It does not wait for the test matrix, so it still
+# works while one of Pumpkin's own test jobs is failing. It publishes nothing: the binaries are
+# workflow artifacts of the run.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build ${{ matrix.asset }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - asset: wheeped-X64-Linux
+          # For CPUs with AVX2 and BMI2 (Haswell and newer, Zen and newer).
+          - asset: wheeped-X64-v3-Linux
+            rustflags: -C target-cpu=x86-64-v3
+    env:
+      RUSTFLAGS: -Dwarnings ${{ matrix.rustflags }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - run: rustup update stable && rustup default stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.asset }}
+      # The release profile as it is: full link-time optimisation, one codegen unit.
+      - name: Build release
+        run: cargo build --locked --release -p pumpkin
+      - name: Prepare artifact
+        run: |
+          mkdir -p dist
+          cp target/release/pumpkin "dist/${{ matrix.asset }}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.asset }}
+          compression-level: 9
+          path: dist/${{ matrix.asset }}
