@@ -1212,8 +1212,7 @@ fn a_failure_at_every_durability_step_leaves_the_previous_generation_intact() {
         expected.insert(k(0, 0), Some(b("probe")));
 
         for fail_at in 0..steps {
-            let counter = Arc::new(std::sync::atomic::AtomicUsize::new(0));
-            let seen = counter.clone();
+            let seen = std::sync::atomic::AtomicUsize::new(0);
             recorder.fail_when(move |_| {
                 (seen.fetch_add(1, std::sync::atomic::Ordering::Relaxed) == fail_at)
                     .then(|| io::Error::other("power loss"))
