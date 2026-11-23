@@ -61,26 +61,45 @@ drop a Wheeped edit without a conflict).
 | `typos.toml` | `crates/sonix-awf/tests/fixtures/java-b57` excluded | Hash-linked binary fixtures full of hex names |
 | `.github/workflows/rust.yml` | Push trigger `master` to `main` | `main` is the fork's branch. The canary release job still asks for `master`, so it never runs from `main` |
 | `.github/workflows/release.yml`, `nix.yml`, `sync-wit.yml` | Jobs limited to `Pumpkin-MC/Pumpkin` | They need Pumpkin's secrets or serve Pumpkin's packaging |
+| `crates/pumpkin-core/src/block/blocks/redstone/daylight_detector.rs` | `update_signal_strength` returns when the block is no longer a daylight detector | Its block entity can be ticked after the block was replaced, and the update then panicked the simulation thread |
+| `tools/pumpkin-tester/src/bot_tests/snow_golem.rs` | The snow formation check cancels events before it registers its handler, and counts at least four events per step instead of exactly four | The server ticks the test's golem at the same time, so the exact counts failed whenever a tick landed inside the check |
+| `crates/pumpkin-plugin-runtime/src/lib.rs` (its tests only) | Budgets for a call to complete raised from 2 s and 10 s to 30 s and 120 s | The Android emulator of the CI can need more than 2 s for one of these calls |
 
 ## Workflows
 
 The fork carries Pumpkin's GitHub workflows, enabled here on 2026-11-23. `rust.yml` (formatting, lints, tests, builds) runs for pull requests and for
 pushes to `main`; `typos.yml` runs on every push. `docker.yml` and `nightly.yml` came limited to
 `Pumpkin-MC/Pumpkin`, and `release.yml`, `nix.yml` and `sync-wit.yml` are limited to it here: their
-jobs are skipped in this repository. Pull request checks have run here; a push to `main` has not yet.
+jobs are skipped in this repository.
 
 `wheeped-build.yml` is this fork's own: started by hand, it builds a Linux binary of any branch
 without waiting for the test matrix and publishes nothing. [TRYING-A-BUILD.md](TRYING-A-BUILD.md)
 says how to use it.
 
-Pumpkin's "GameTest and Bot Harness" job is unstable at the base commit `a49be4bee`. On Pumpkin's own
-run for that commit it failed ("Cancelled snow formation must leave all four positions unchanged").
-Here, on 2026-11-23 and on changes that do not touch the server, it passed once and failed twice
-with a panic in gameplay code (`air is not a valid block for DaylightDetectorLikeProperties`, thread
-`Simulation-0`). Pumpkin's run for that commit also lost "Test (Linux ARM64)" to a killed runner
-(exit code 143). A red result of these jobs says little about a Wheeped change; run them again
-before reading anything into it. The release build at the end of `rust.yml` runs only when every
-test job of the run passed, which is the reason for the separate build workflow.
+Three of Pumpkin's checks failed here on 2026-11-23, at the base commit `a49be4bee` and on changes
+that could not have caused it. Each is changed in this fork; the files are in the list above.
+
+- "GameTest and Bot Harness" panicked the simulation thread twice (`air is not a valid block for
+  DaylightDetectorLikeProperties`). A daylight detector's block entity was ticked after its block
+  had been replaced, and the update did not check what block was there. It returns early now. The
+  same panic would stop the simulation thread of a running server.
+- The same job failed once with "Cancelled snow formation must leave all four positions unchanged",
+  which is also how Pumpkin's own run for that commit failed. The bot test counted the formation
+  events of a golem that the server ticks at the same time, so a tick inside the check changed the
+  count. The test now cancels events before it listens and takes its counts as lower bounds.
+- "Test on Android AArch64" failed once in `pumpkin-plugin-runtime` (`blocking sync-lifted guest
+  reentry timed out`): a call had two seconds to complete, on an emulator. The budgets of those
+  tests are longer now.
+
+The three changes follow from reading the code. None of the failures was reproduced on purpose, and
+a few green runs do not show that an intermittent failure is gone: if one of these returns, run the
+job again and look at its log before reading it as a Wheeped failure. In the six runs the GameTest
+job had completed here when the changes were written, it passed three times and failed three times.
+Pumpkin's run for the base commit also lost "Test (Linux ARM64)" to a killed runner (exit code 143),
+which no change here addresses.
+
+The release build at the end of `rust.yml` runs only when every test job of the run passed, which is
+the reason for the separate build workflow.
 
 ## Sending a change to Pumpkin
 
