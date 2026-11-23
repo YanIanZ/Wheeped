@@ -1,13 +1,14 @@
 # Trying a build
 
-How to get a Linux binary of a branch and put it in front of a proxy on a test server. Nothing here
-has been run by an agent: no workflow has run in this fork yet, and no Wheeped build has been
-started on any server. Treat the first pass through it as a test of these instructions as well.
+How to get a Linux binary of a branch and put it in front of a proxy on a test server. Pull request
+checks have been running in this fork since 2026-11-23. A manual run that builds release binaries
+has not been done yet, and no Wheeped build has been started on any server, so everything from
+step 2 on is untested: treat the first pass through it as a test of these instructions as well.
 
 ## 1. Turn on workflows in the fork (once)
 
-GitHub keeps workflows off in a new fork. In the repository, open **Actions** and confirm that the
-workflows may run. From then on:
+GitHub keeps workflows off in a new fork until they are confirmed in the repository's **Actions**
+tab. That was done on 2026-11-23. Since then:
 
 - a pull request runs formatting, lints and the tests of the crates it touches;
 - a push to `main` runs the full suite and builds release binaries;

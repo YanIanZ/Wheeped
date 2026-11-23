@@ -57,12 +57,11 @@ drop a Wheeped edit without a conflict).
 
 ## Workflows
 
-The fork carries Pumpkin's GitHub workflows. GitHub keeps workflows disabled on a new fork until the
-owner enables them. `rust.yml` (formatting, lints, tests, builds) runs for pull requests and for
+The fork carries Pumpkin's GitHub workflows, enabled here on 2026-11-23. `rust.yml` (formatting, lints, tests, builds) runs for pull requests and for
 pushes to `main`; `typos.yml` runs on every push. `docker.yml` and `nightly.yml` came limited to
 `Pumpkin-MC/Pumpkin`, and `release.yml`, `nix.yml` and `sync-wit.yml` are limited to it here: their
-jobs are skipped in this repository. None of this has run yet. [TRYING-A-BUILD.md](TRYING-A-BUILD.md)
-says how to get a binary out of it.
+jobs are skipped in this repository. Pull request checks have run here; a push to `main` and a manual
+run have not yet. [TRYING-A-BUILD.md](TRYING-A-BUILD.md) says how to get a binary out of it.
 
 ## Sending a change to Pumpkin
 
