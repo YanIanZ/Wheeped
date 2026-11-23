@@ -5,6 +5,9 @@
 //! an `.awf` image carries an immutable world, and an `.awf` world file carries a portable one. The
 //! on-disk format is the one `SourbyCraft` writes, so either server can open what the other wrote.
 //!
+//! Over a store, a [`World`] is one world at runtime: the chunks it owns in memory, copy-on-write
+//! over a base, committed through the store in the order their snapshots were taken.
+//!
 //! Nothing here knows about a running server. Every call that touches the disk blocks, so callers
 //! run it off the tick.
 //!
@@ -19,17 +22,21 @@
 #![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used, clippy::panic))]
 
 mod codec;
+mod commit_lock;
 mod durability;
 mod error;
 mod generation;
 mod hash;
 mod image;
 mod key;
+mod metrics;
 mod object_store;
 mod role;
+mod shutdown;
 mod source;
 mod store;
 mod text;
+mod world;
 mod world_file;
 mod world_store;
 
@@ -39,10 +46,13 @@ pub use error::{AwfError, Result};
 pub use generation::{Generation, GenerationStore, Stage, StageHook};
 pub use image::{Image, MAX_CHUNK_BYTES, MAX_CHUNKS, MAX_META};
 pub use key::ChunkKey;
+pub use metrics::{LatencyRecorder, MetricsSnapshot, Percentiles};
 pub use object_store::{ObjectName, ObjectStore, Written};
 pub use role::{PersistenceMode, WorldRole};
+pub use shutdown::{ShutdownBudget, monotonic_nanos};
 pub use source::{ChunkSource, LayeredSource};
 pub use store::{CommitResult, Store};
+pub use world::{MAX_PENDING_SAVES, QueuedSave, SharedSource, SharedStore, World, WorldBase};
 pub use world_file::{Stream as WorldFileStream, WorldFile, Writer as WorldFileWriter};
 pub use world_store::{Compaction, Entry, WorldStore};
 

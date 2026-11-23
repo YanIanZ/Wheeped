@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use std::sync::Arc;
 
 use crate::error::Result;
 use crate::key::ChunkKey;
@@ -13,6 +14,18 @@ pub trait ChunkSource {
 
     /// Every chunk this source can return.
     fn keys(&self) -> BTreeSet<ChunkKey>;
+}
+
+/// A shared source reads as the source it shares, so one store can be both a world's store and
+/// the upper layer of its base.
+impl<S: ChunkSource + ?Sized> ChunkSource for Arc<S> {
+    fn read(&self, key: ChunkKey) -> Result<Option<Vec<u8>>> {
+        (**self).read(key)
+    }
+
+    fn keys(&self) -> BTreeSet<ChunkKey> {
+        (**self).keys()
+    }
 }
 
 /// An upper source over a lower one: a committed instance store over its template, for example.
