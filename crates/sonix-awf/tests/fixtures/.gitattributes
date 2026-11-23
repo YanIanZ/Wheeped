@@ -1,0 +1,4 @@
+# Hash-linked binary fixtures: never convert line endings.
+* -text
+README.md text
+.gitattributes text
