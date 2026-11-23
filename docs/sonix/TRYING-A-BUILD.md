@@ -1,9 +1,9 @@
 # Trying a build
 
 How to get a Linux binary of a branch and put it in front of a proxy on a test server. Pull request
-checks have been running in this fork since 2026-11-23. A manual run that builds release binaries
-has not been done yet, and no Wheeped build has been started on any server, so everything from
-step 2 on is untested: treat the first pass through it as a test of these instructions as well.
+checks have been running in this fork since 2026-11-23. The build workflow of step 2 has not run
+yet, and no Wheeped build has been started on any server, so everything from step 2 on is untested:
+treat the first pass through it as a test of these instructions as well.
 
 ## 1. Turn on workflows in the fork (once)
 
@@ -11,27 +11,34 @@ GitHub keeps workflows off in a new fork until they are confirmed in the reposit
 tab. That was done on 2026-11-23. Since then:
 
 - a pull request runs formatting, lints and the tests of the crates it touches;
-- a push to `main` runs the full suite and builds release binaries;
-- a push to `master`, which only mirrors Pumpkin, runs neither.
+- a push to `main` runs the full suite.
+
+`master` is never pushed: see [UPSTREAM.md](UPSTREAM.md) for why.
 
 The spelling check runs on every push. The release, nightly, Docker, Nix and WIT mirror workflows
 are Pumpkin's: their jobs are limited to Pumpkin's repository and are skipped here.
 
 ## 2. Build a binary from a branch
 
-**Actions**, then **Cargo Build, Test, and Linting**, then **Run workflow**, and pick the branch. A
-manual run is a full run: it ends with the job "Build project in release", which uploads one
-artifact per platform. The one for the game nodes is `pumpkin-X64-Linux`.
+**Actions**, then **Wheeped build**, then **Run workflow**, and pick the branch. The workflow is on
+`main`, so it is there once this file is. It builds the release profile as it is (full link-time
+optimisation, one codegen unit, which is what Pumpkin's shipped binaries use) and uploads two
+artifacts:
 
-Two things to know about that artifact:
+- `wheeped-X64-Linux`: runs on any 64-bit x86 CPU.
+- `wheeped-X64-v3-Linux`: for CPUs with AVX2 and BMI2 (Intel Haswell and newer, AMD Zen and newer),
+  usually the faster of the two. A CPU without them stops it with an illegal instruction.
 
-- It is built without link-time optimisation and with 16 codegen units (the workflow's defaults for
-  speed). For a performance comparison, start the run with **LTO mode** `fat` and **codegen units**
-  `1`, which is what Pumpkin's shipped binaries use. It takes much longer.
-- The binary is still called `pumpkin`. See [UPSTREAM.md](UPSTREAM.md) for why names are unchanged.
+It publishes nothing: the binaries are artifacts of the run, kept for GitHub's retention period.
+Inside the artifact the file carries the artifact's name; in the source tree the binary is still
+called `pumpkin` (see [UPSTREAM.md](UPSTREAM.md) for why names are unchanged).
 
-From a terminal: `gh workflow run rust.yml --repo YanIanZ/Wheeped --ref <branch> -f release_lto=fat -f release_codegen_units=1`,
-then `gh run download --repo YanIanZ/Wheeped --name pumpkin-X64-Linux` once it has finished.
+From a terminal: `gh workflow run wheeped-build.yml --repo YanIanZ/Wheeped --ref <branch>`, then
+`gh run download --repo YanIanZ/Wheeped --name wheeped-X64-v3-Linux` once it has finished. A full
+build of this kind takes long, often more than half an hour.
+
+The big CI workflow also has a release build at its end, but it runs only when every test job
+passed, and two of Pumpkin's own are failing at the moment ([UPSTREAM.md](UPSTREAM.md)).
 
 ## 3. Start it
 
@@ -39,7 +46,7 @@ The server writes its configuration and worlds into the directory it is started 
 empty one. The first start writes `pumpkin.toml` with every key and its default.
 
 ```sh
-chmod +x pumpkin-X64-Linux && ./pumpkin-X64-Linux
+chmod +x wheeped-X64-v3-Linux && ./wheeped-X64-v3-Linux
 ```
 
 Type `stop` in its console to shut it down.

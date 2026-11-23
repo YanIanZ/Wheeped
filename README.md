@@ -19,9 +19,8 @@ Wheeped is a fork of [Pumpkin](https://github.com/Pumpkin-MC/Pumpkin).
 - **Wheeped** is the server. **Sonix** is the name of the engine work done in this fork: world
   storage, player profiles, the services a network of servers needs, and the API that first-party
   plugins are written against.
-- It starts from Pumpkin, a Minecraft server written from scratch in Rust, and follows it: Pumpkin's
-  `master` is mirrored here untouched, and Wheeped's changes live on `main` beside it so upstream
-  work keeps merging in.
+- It starts from Pumpkin, a Minecraft server written from scratch in Rust, and follows it:
+  Wheeped's changes live on `main`, and Pumpkin's work keeps being merged into it.
 - The systems that come from [SourbyCraft](https://github.com/YanIanZ/SourbyCraft) (Aurora World
   Fabric, MultiProfile and others) are being ported from Java to Rust, unit by unit, each held to the
   behaviour of the Java original. Progress is in [docs/sonix/PORT-MAP.md](docs/sonix/PORT-MAP.md).
@@ -69,7 +68,8 @@ reproduced on unmodified Pumpkin before it is theirs.
 
 Wheeped is a modified version of Pumpkin, forked on 2026-11-23 from commit
 [`a49be4bee`](https://github.com/Pumpkin-MC/Pumpkin/commit/a49be4bee2113e4cf812de3117c61bc3e9d06d3f).
-Every change since then is in this repository's history (`git log master..main`).
+Every change since then is in this repository's history (`git log upstream/master..main` in a clone
+that has Pumpkin as its `upstream` remote).
 
 - **Server** (Pumpkin's crates and Wheeped's `sonix-*` crates): [GNU General Public License v3.0](LICENSE).
 - **Plugin API** (`pumpkin-plugin-api`, `pumpkin-plugin-wit`): dual-licensed

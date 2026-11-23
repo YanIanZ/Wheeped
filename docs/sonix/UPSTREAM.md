@@ -9,23 +9,28 @@ possible.
 | :-- | :-- |
 | `upstream` | `https://github.com/Pumpkin-MC/Pumpkin.git`, fetch only. The local push URL is disabled on purpose. |
 | `origin` | `https://github.com/YanIanZ/Wheeped.git` |
-| `master` | Mirror of `upstream/master`. Fast-forward only, no Wheeped commits. |
+| `master` | Pumpkin's branch as it was at the fork point. No Wheeped commits, and never pushed: see below. The live mirror is `upstream/master` in a clone. |
 | `main` | Wheeped. Default branch. Changes arrive through pull requests. |
 
 ## Taking upstream changes
 
 ```sh
 git fetch upstream
-git checkout master && git merge --ff-only upstream/master && git push origin master
 git checkout -b sync/upstream-YYYYMMDD main
-git merge master            # resolve conflicts here, on the branch
+git merge upstream/master   # resolve conflicts here, on the branch
 cargo check --locked -p pumpkin
 git push -u origin sync/upstream-YYYYMMDD
 gh pr create --repo YanIanZ/Wheeped --base main --title "chore(upstream): merge Pumpkin <short sha>"
 ```
 
-A merge, not a rebase: `main` keeps Pumpkin's history, so `git log master..main` is always exactly
-what Wheeped changed.
+A merge, not a rebase: `main` keeps Pumpkin's history, so after a fetch `git log upstream/master..main`
+is always exactly what Wheeped changed.
+
+**Do not push `master` to this repository, and do not use GitHub's "Sync fork" on it.** A push runs
+the workflow files of the branch that was pushed, and `master` carries Pumpkin's untouched ones:
+the full CI and, when it passes, Pumpkin's canary job, which force-moves a `canary` tag and
+publishes a prerelease with binaries in this repository. So `master` on GitHub stays where the fork
+was made, and upstream is merged from the `upstream` remote of a clone.
 
 After a merge, check two things that fail quietly: the native plugin `PLUGIN_API_VERSION` (a bump
 means every native plugin is rebuilt), and the list below (an upstream rewrite of a touched file can
@@ -52,7 +57,7 @@ drop a Wheeped edit without a conflict).
 | `crates/pumpkin/src/main.rs` | Startup banner and support links | Names the fork and the base; sends issue reports to this repository, not to Pumpkin |
 | `crates/pumpkin-config/src/telemetry.rs` | Default `enabled` true to false | The endpoint is Pumpkin's; a fork does not report into it unasked |
 | `crates/pumpkin-config/src/update_checker.rs` | Default `enabled` true to false | It checks Pumpkin's releases, which are not Wheeped builds |
-| `.github/workflows/rust.yml` | Push trigger `master` to `main` | `main` is the fork's branch; a mirror push should not build |
+| `.github/workflows/rust.yml` | Push trigger `master` to `main` | `main` is the fork's branch. The canary release job still asks for `master`, so it never runs from `main` |
 | `.github/workflows/release.yml`, `nix.yml`, `sync-wit.yml` | Jobs limited to `Pumpkin-MC/Pumpkin` | They need Pumpkin's secrets or serve Pumpkin's packaging |
 
 ## Workflows
@@ -60,10 +65,19 @@ drop a Wheeped edit without a conflict).
 The fork carries Pumpkin's GitHub workflows, enabled here on 2026-11-23. `rust.yml` (formatting, lints, tests, builds) runs for pull requests and for
 pushes to `main`; `typos.yml` runs on every push. `docker.yml` and `nightly.yml` came limited to
 `Pumpkin-MC/Pumpkin`, and `release.yml`, `nix.yml` and `sync-wit.yml` are limited to it here: their
-jobs are skipped in this repository. Pull request checks have run here; a push to `main` and a manual
-run have not yet. [TRYING-A-BUILD.md](TRYING-A-BUILD.md) says how to get a binary out of it.
+jobs are skipped in this repository. Pull request checks have run here; a push to `main` has not yet.
+
+`wheeped-build.yml` is this fork's own: started by hand, it builds a Linux binary of any branch
+without waiting for the test matrix and publishes nothing. [TRYING-A-BUILD.md](TRYING-A-BUILD.md)
+says how to use it.
+
+Two of Pumpkin's jobs are red at the base commit `a49be4bee` on Pumpkin's own CI, and for the same
+reason here: "GameTest and Bot Harness" (a panic in the bot run: `air is not a valid block for
+DaylightDetectorLikeProperties`) and "Test (Linux ARM64)". They say nothing about a Wheeped change
+until an upstream merge brings the fix. While a test job is red, the release build at the end of
+`rust.yml` is skipped, which is the reason for the separate build workflow.
 
 ## Sending a change to Pumpkin
 
-A fix that belongs upstream goes to Pumpkin as its own branch from `master`, under Pumpkin's rules
+A fix that belongs upstream goes to Pumpkin as its own branch from `upstream/master`, under Pumpkin's rules
 in `AGENTS.md` and `CONTRIBUTING.md`: the owner opens that pull request himself.
