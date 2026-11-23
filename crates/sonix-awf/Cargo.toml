@@ -10,9 +10,11 @@ license.workspace = true
 # Java's modified UTF-8, which `.awf` headers are written in.
 pumpkin-nbt.workspace = true
 
+crc32c.workspace = true
 flate2.workspace = true
 hex.workspace = true
 indexmap.workspace = true
+ruzstd.workspace = true
 sha2.workspace = true
 thiserror.workspace = true
 tracing.workspace = true

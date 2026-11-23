@@ -259,7 +259,7 @@ fn length_field(length: usize) -> Result<[u8; 4]> {
         .map_err(|_| AwfError::InvalidArgument(format!("{length} does not fit an AWF image field")))
 }
 
-fn write_utf(out: &mut Vec<u8>, text: &str) -> Result<()> {
+pub fn write_utf(out: &mut Vec<u8>, text: &str) -> Result<()> {
     let encoded = to_java_cesu8(text);
     let length = u16::try_from(encoded.len()).map_err(|_| {
         AwfError::InvalidArgument(format!(
@@ -272,7 +272,7 @@ fn write_utf(out: &mut Vec<u8>, text: &str) -> Result<()> {
     Ok(())
 }
 
-fn read_utf(input: &mut impl Read) -> Result<String> {
+pub fn read_utf(input: &mut impl Read) -> Result<String> {
     let mut length = [0u8; 2];
     input.read_exact(&mut length)?;
     let mut encoded = vec![0u8; usize::from(u16::from_be_bytes(length))];
@@ -282,7 +282,7 @@ fn read_utf(input: &mut impl Read) -> Result<String> {
         .map_err(|_| AwfError::Corrupt("a metadata string is not valid modified UTF-8".to_string()))
 }
 
-fn read_count(input: &mut impl Read, max: usize, what: &str) -> Result<usize> {
+pub fn read_count(input: &mut impl Read, max: usize, what: &str) -> Result<usize> {
     let count = read_i32(input)?;
     usize::try_from(count)
         .ok()
@@ -296,20 +296,20 @@ fn read_u32(input: &mut impl Read) -> io::Result<u32> {
     Ok(u32::from_be_bytes(bytes))
 }
 
-fn read_i32(input: &mut impl Read) -> io::Result<i32> {
+pub fn read_i32(input: &mut impl Read) -> io::Result<i32> {
     let mut bytes = [0u8; 4];
     input.read_exact(&mut bytes)?;
     Ok(i32::from_be_bytes(bytes))
 }
 
-fn read_i64(input: &mut impl Read) -> io::Result<i64> {
+pub fn read_i64(input: &mut impl Read) -> io::Result<i64> {
     let mut bytes = [0u8; 8];
     input.read_exact(&mut bytes)?;
     Ok(i64::from_be_bytes(bytes))
 }
 
 /// Creates a new file next to `name` in `parent` for an atomic replace.
-fn create_temp(parent: &Path, name: &str) -> io::Result<(PathBuf, File)> {
+pub fn create_temp(parent: &Path, name: &str) -> io::Result<(PathBuf, File)> {
     let mut attempt = 0u32;
     loop {
         let candidate = parent.join(format!(
@@ -329,12 +329,12 @@ fn create_temp(parent: &Path, name: &str) -> io::Result<(PathBuf, File)> {
 }
 
 #[cfg(unix)]
-fn read_exact_at(file: &File, buffer: &mut [u8], offset: u64) -> io::Result<()> {
+pub fn read_exact_at(file: &File, buffer: &mut [u8], offset: u64) -> io::Result<()> {
     std::os::unix::fs::FileExt::read_exact_at(file, buffer, offset)
 }
 
 #[cfg(windows)]
-fn read_exact_at(file: &File, mut buffer: &mut [u8], mut offset: u64) -> io::Result<()> {
+pub fn read_exact_at(file: &File, mut buffer: &mut [u8], mut offset: u64) -> io::Result<()> {
     use std::os::windows::fs::FileExt;
     while !buffer.is_empty() {
         match file.seek_read(buffer, offset) {
