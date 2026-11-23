@@ -30,7 +30,7 @@ spawners, redstone, hoppers, mob AI), and whether worlds saved by SourbyCraft 26
 | Subsystem | Comes from (SourbyCraft) | Rust home | Status |
 | :-- | :-- | :-- | :-- |
 | AWF storage core: content-addressed objects, atomic generations, world store, `.awf` version 1 image, `.awf` version 2 world file with its codecs | `awf/*.java` | `crates/sonix-awf` | **implemented**, held against the Java original; used by nothing in the server yet. See [PORT-MAP.md](PORT-MAP.md) |
-| AWF world layer: copy-on-write worlds over templates, save pipeline | `awf/AwfWorld.java` | `crates/sonix-awf` | planned |
+| AWF world layer: copy-on-write worlds over templates, save pipeline, per-world metrics, shutdown budget | `awf/AwfWorld.java`, `AwfMetrics`, `AwfShutdownBudget` | `crates/sonix-awf` | written, with the Java unit tests ported; **the tests have not been run yet**, and nothing in the server uses it. See [PORT-MAP.md](PORT-MAP.md) |
 | Engine attach: chunks of a managed world read and written through AWF instead of region files | `AwfRegionStorage`, `AwfEngine`, feature patch 0021 | a chunk I/O backend in `pumpkin-world` | planned |
 | Runtime worlds: create, load, save, unload, delete, templates, instances, registry | `awf/world/` (`AuroraWorlds`) | to be named | planned |
 | Redis world backend | `awf/redis/` | to be named | planned |

@@ -47,6 +47,17 @@ is the one in `crates/sonix-*`. Add a term when a unit brings it.
 | compaction policy | Whether commits may write deltas, and after how many hops a full index is written. | `AwfWorldStore.Compaction` | `Compaction` |
 | template | An immutable store that instances share. | `TEMPLATE` role | same |
 | instance | A copy-on-write world over a template. | `INSTANCE` role | same |
+| world | One world at runtime: the chunks it owns in memory, over a world base, committed through a store. | `AwfWorld` | `World` |
+| world base | Where a world reads the chunks it does not own: an image, a store, or one layered over the other. Not the base of a delta generation. | `AwfWorld.base` | `WorldBase` |
+| resident | Held in a world's memory, as bytes or as the fact that the world deleted the chunk. | `resident` | `resident` |
+| dirty | Written or deleted since the last commit that carried the chunk. | `dirty` | `dirty` |
+| resident limit | How many world-owned chunks stay in memory after a save. Clean ones beyond it are dropped, least recently used first; dirty ones never. | `residentLimit` | `resident_limit` |
+| storage lane | Wherever a server runs its blocking commits, off the tick. | the `storageLane` executor | the thread or pool that runs a `QueuedSave` |
+| queued save | A commit waiting for the storage lane. It holds one of its world's pending slots. | the `CompletionStage` of `save` | `QueuedSave` |
+| fence | Refusing every commit of a world that has not started yet. There is no way back. | `fence()`, `FencedException` | `fence()`, `AwfError::Fenced` |
+| shutdown budget | The one deadline every wait of a shutdown shares. | `AwfShutdownBudget` | `ShutdownBudget` |
+| deadline exceeded | A call cut off by the shutdown budget. It says whether the request may have reached the backend. | `AwfDeadlineExceeded` | `AwfError::DeadlineExceeded` |
+| metrics snapshot | A point-in-time copy of one world's counters and latency percentiles. | `AwfMetrics.Snapshot` | `MetricsSnapshot` |
 
 ## MultiProfile
 

@@ -57,8 +57,11 @@ No dependency on a running server. Target crate: `crates/sonix-awf`.
 | `AwfWorldStore` | 613 | chunk index and deltas over the two stores | `world_store` | done ¹ ² |
 | `Compression` | 92 | codec ids and zstd, used by the version 2 world file | `codec` | done ¹ ² |
 | `AwfWorldFile` | 288 | `.awf` version 2 portable world file | `world_file` | done ¹ ² |
-| `AwfWorld` | 574 | copy-on-write world, save pipeline, metrics | `world` | open |
-| `AwfBackend`, `AwfRegistry`, `AwfMetrics`, `LatencyRecorder` | 227 | backend selection and counters | to be placed | open |
+| `AwfWorld` | 574 | copy-on-write world, save pipeline | `world`, `commit_lock` | ported, unverified ³ |
+| `AwfMetrics`, `LatencyRecorder` | 67 | per-world counters and latency percentiles | `metrics` | ported, unverified ³ |
+| `AwfShutdownBudget`, `AwfDeadlineExceeded` | 159 | the one time budget every wait of a shutdown shares, and the error of a call it cut off | `shutdown`, `error` | ported, unverified ³ |
+| `AwfBackend` | 128 | backend selection | to be placed | open |
+| `AwfRegistry` | 32 | a name-keyed set of worlds | none | not ported: nothing in SourbyCraft's runtime registers a world in it or reads it, as its own comment says; only a test does |
 
 ¹ Unit tests in the module, ported from the Java tests of the same unit (`GenerationStoreTest`,
 `AwfWorldStoreTest`, `AwfFileTest`, `AwfWorldFileTest`, `AwfDeltaGenerationTest`, `AwfRollbackTest`, and
@@ -68,6 +71,13 @@ the store-level cases of `AwfDurabilityTest` and `AwfCompactionLifecycleTest`): 
 `crates/sonix-awf/tests/fixtures/README.md` describes: Rust reads stores, an image and world files
 written by the Build 57 classes (10 tests, part of `cargo test`), and the Java classes opened and
 verified what Rust wrote and committed on top of its stores (run by hand, needs a JVM).
+
+³ Written on 2026-11-23 with 47 unit tests: the Java tests of the same units ported
+(`AwfWorldTest`, `AwfCommitOrderTest`, and the cases of `AwfConcurrentFlushTest`,
+`AwfChunkUnloadRetentionTest`, `AwfLifecycleFenceTest`, `AwfShutdownDeadlineTest` and
+`AwfDirtyBytesCommitTest` that are about the world itself, which the Java tests partly reach through
+the region storage), and cases of this port's own for what those leave out. It compiles and passes
+the lints. The tests have not been run yet, and nothing of it was held against the Java original.
 
 What "done" does not cover: nothing in the server calls this crate yet, no world has been loaded
 through it, and no store from a live server has been opened with it.
@@ -86,7 +96,16 @@ differently, or where a Java-only concern has no counterpart yet.
 | Compressed bytes | `java.util.zip.Deflater` | a pure Rust zlib implementation | Both are zlib streams; each side inflates the other's |
 | Error text for a damaged object | `chunk null ...` | `object <name> ...` | The Java text is an accident of passing no key |
 | `Image::open` on a metadata string that is not modified UTF-8 | `UTFDataFormatException` | reported as corrupt | Both refuse the file |
-| `CommitResult.generation` | `long`, `-1` when the world layer had nothing to commit | `u64` | The `-1` case belongs to `AwfWorld`, which is not ported; it will be an `Option` there |
+| `CommitResult.generation` | `long`, `-1` when the world layer had nothing to commit | `u64` | The `-1` case belongs to the world layer, where a save with nothing to commit answers `None` |
+| `AwfWorld.save(mode, executor, attempts)` | hands the commit to an executor and returns a `CompletionStage` | `World::save` returns a `QueuedSave`, and the caller's storage lane runs it | No executor or future type is tied into the crate. A queued save dropped without running frees its slot and counts as a failed save, which is what an executor refusing the task does in Java |
+| A world's chunks in memory | `ConcurrentHashMap`s; a write is one `compute` | one mutex per world over the owned chunks and the dirty set | A chunk's bytes and its dirty state still change together. No I/O and no byte copy happens under the mutex; whether a world with many writers at once needs more than that is unmeasured |
+| Bytes handed to a commit | the world's own arrays | a copy of each dirty chunk, made outside the mutex | `Store::commit` takes owned vectors. Sharing the bytes instead would remove the copy and is a change to the store contract |
+| `LatencyRecorder` | an array of 1,024 samples per recorder from the start | grows to 1,024 samples | Same percentiles; a world that never commits holds no samples |
+| A failing expiry action of a shutdown budget | a `RuntimeException` is logged and the next action runs | a panic is caught and logged, and the next action runs | Same intent: one failing action does not keep the others from running |
+| Time values of a shutdown budget | milliseconds and nanoseconds as `long`, from a `LongSupplier` | `Duration`, from a closure returning nanoseconds | The deadline itself stays a nanosecond reading of that clock, for a backend that compares its own |
+| `AwfShutdownBudget.tryLock(Lock)` | on the budget, for any lock | on the world's commit lock, private to the crate | That lock is the only one taken this way so far |
+| `AwfDeadlineExceeded` with a cause | keeps the cause | no cause yet | It comes with the network backend, the only code that has one |
+| `AwfWorld.closeStore`, `fence`, `fenced`, `commitRunning`, `uncertainChunks`, `dirtySample`, `oldestDirtyMillis` | package-private | public | The engine attach will not live in this module |
 | zstd | zstd-jni (the C library) at level 3, and only where the server has it, else deflate | a pure Rust codec at its fastest level, always present | Both write standard frames and each side decodes the other's; compressed sizes differ, and the default codec of a world file writer is always zstd here |
 | Corrupt zstd data, a duplicate or oversized chunk handed to a world file writer | plain `IOException` | `Corrupt`, or an I/O error of kind invalid input | Same family: the file or the call is refused |
 
@@ -105,6 +124,14 @@ Not fixed here: the port keeps the original's behaviour, and changing it is the 
   missing object. A restart does not clear it, because the leftover's number is below the current
   one. Removing uncommitted generation directories at the start of a commit, as an open already
   does, would close it.
+- **A chunk above 64 MiB can be written but never read.** `ObjectStore.put` takes any chunk an `int`
+  can count, while `get` refuses an object that declares more than 64 MiB. A commit reads its own
+  objects back before the commit point, so such a chunk is not stored unreadably: it fails every
+  commit of its world from then on. No chunk comes near that size. The port keeps both limits.
+- **Cleaning an object directory follows a symbolic link.** A writable open and `retainOnly` delete
+  files in every directory under `objects/`, and take a symbolic link to a directory for one.
+  Whoever can plant a link there can already write the store, so this is hardening rather than a
+  hole. The port does the same.
 
 ## Wave 1: attach to the engine
 
@@ -115,7 +142,7 @@ Depends on wave 0 and on Pumpkin's chunk I/O.
 | `AwfChunkNbt` | 31 | chunk tag to stored bytes (vanilla uncompressed named-root NBT) | open |
 | `AwfRegionStorage`, `RegionFileStorageHooks`, `AwfWorldFolders` | 1,085 | the storage a world's chunks go through | open: redesigned for `pumpkin-world`'s chunk I/O, not transliterated |
 | `AwfEngine`, `AwfSettings` | 1,129 | which worlds are managed, store lifecycle, settings | open |
-| `AwfMaintenanceDriver`, `AwfFlushReporting`, `AwfShutdownBudget`, `AwfShutdownReport`, `AwfDeadlineExceeded` | 747 | periodic commits, flush and shutdown deadlines | open |
+| `AwfMaintenanceDriver`, `AwfFlushReporting`, `AwfShutdownReport` | 588 | periodic commits, flush and shutdown reporting (the shutdown budget itself is in wave 0, because the world takes it) | open |
 | `ChunkPruning` | 127 | dropping empty chunks from a save | open |
 | `ReadFailureLog`, `RepeatedReadFailureLogFilter` | 307 | rate-limited read failure logging | open |
 | `world/` (11 files) | 3,260 | runtime worlds: create, load, save, unload, delete, templates, instances, registry, Slime import | open |
