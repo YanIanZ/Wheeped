@@ -4,7 +4,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Deserialize, Serialize, Clone, Debug)]
 #[serde(default)]
 pub struct TelemetryConfig {
-    /// Whether anonymous telemetry is enabled. Default is true.
+    /// Whether anonymous telemetry is enabled. Default is false in Wheeped: the endpoint belongs to
+    /// Pumpkin, and a fork must not report its servers into upstream's statistics unasked.
     pub enabled: bool,
     /// Custom telemetry backend ingestion endpoint.
     pub endpoint: String,
@@ -19,7 +20,7 @@ pub struct TelemetryConfig {
 impl Default for TelemetryConfig {
     fn default() -> Self {
         Self {
-            enabled: true,
+            enabled: false,
             endpoint: "https://telemetry.pumpkinmc.org/v1/heartbeat".to_string(),
             interval_secs: 300,
             public: false,
@@ -40,7 +41,7 @@ mod tests {
     #[test]
     fn telemetry_default() {
         let default_config = TelemetryConfig::default();
-        assert!(default_config.enabled);
+        assert!(!default_config.enabled);
         assert_eq!(
             default_config.endpoint,
             "https://telemetry.pumpkinmc.org/v1/heartbeat"

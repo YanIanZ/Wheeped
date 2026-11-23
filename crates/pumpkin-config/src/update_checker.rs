@@ -4,7 +4,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Deserialize, Serialize, Clone, Debug)]
 #[serde(default)]
 pub struct UpdateCheckerConfig {
-    /// Whether to check for new Pumpkin updates on server startup.
+    /// Whether to check for new Pumpkin updates on server startup. Default is false in Wheeped: the
+    /// checker looks at Pumpkin's releases, which are not Wheeped builds.
     pub enabled: bool,
     /// Whether to notify server operators in chat when they join if an update is available.
     pub notify_ops_on_join: bool,
@@ -17,7 +18,7 @@ pub struct UpdateCheckerConfig {
 impl Default for UpdateCheckerConfig {
     fn default() -> Self {
         Self {
-            enabled: true,
+            enabled: false,
             notify_ops_on_join: true,
             connect_timeout: 5000,
             read_timeout: 5000,
@@ -32,7 +33,7 @@ mod tests {
     #[test]
     fn update_checker_default() {
         let config = UpdateCheckerConfig::default();
-        assert!(config.enabled);
+        assert!(!config.enabled);
         assert!(config.notify_ops_on_join);
         assert_eq!(config.connect_timeout, 5000);
         assert_eq!(config.read_timeout, 5000);
