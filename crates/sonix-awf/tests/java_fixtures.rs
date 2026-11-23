@@ -2,6 +2,10 @@
 //!
 //! `fixtures/java-b57/` was written by `java/Fixtures.java` running the Build 57 sources; how, and
 //! how to run the opposite direction (Java reading what Rust wrote), is in `fixtures/README.md`.
+//!
+//! Not built for Android: the workflow runs tests on an emulator, and the fixtures are files in the
+//! source tree that are not on that device.
+#![cfg(not(target_os = "android"))]
 #![allow(
     clippy::unwrap_used,
     clippy::expect_used,
