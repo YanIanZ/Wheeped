@@ -52,3 +52,42 @@ java-image.awf	chunk	3	-3	0	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495
 java-image.awf	chunk	-1	-1	9000	005652627b72f5e61ba70e9e0bb10cc70b9657bfb29f57ef3d3cc1b8d9b2d34c
 java-image.awf	chunk	0	0	4	f9194e73f9e9459e3450ea10a179cdf77aafa695beecd3b9344a98d111622243
 java-image.awf	chunk	-2147483648	2147483647	6	45d227c4b297a0ba4ce42738ad3d448e19628a5ecfd509ea861b24a23009d08e
+java-world-none.awf	streams	region,entities,poi
+java-world-none.awf	meta	656d6f6a69	f09f9880
+java-world-none.awf	meta	656e7669726f6e6d656e74	6e6f726d616c
+java-world-none.awf	meta	666f726d6174	6177662d776f726c64
+java-world-none.awf	meta	6e61c3af7665	c3a7c3a0
+java-world-none.awf	meta	6e756c	610062
+java-world-none.awf	meta	73656564	2d3432
+java-world-none.awf	schunk	region	3	-3	0	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+java-world-none.awf	schunk	region	-1	-1	9000	d1ede08b64dc8a8edd9a0a05b170d65e1f323038dc61dd9a87cfafdaa18b5409
+java-world-none.awf	schunk	region	0	0	4	f9194e73f9e9459e3450ea10a179cdf77aafa695beecd3b9344a98d111622243
+java-world-none.awf	schunk	region	-2147483648	2147483647	6	45d227c4b297a0ba4ce42738ad3d448e19628a5ecfd509ea861b24a23009d08e
+java-world-none.awf	schunk	entities	0	0	3	beb134754910a4b4790c69ab17d3975221f4c534b70c8d6e82b30c165e8c0c09
+java-world-none.awf	schunk	poi	2	2	300	718f1c8c4cbbf131799ebf5351f339e4c5b659896e427a8d0ea0cd03d7687506
+java-world-deflate.awf	streams	region,entities,poi
+java-world-deflate.awf	meta	656d6f6a69	f09f9880
+java-world-deflate.awf	meta	656e7669726f6e6d656e74	6e6f726d616c
+java-world-deflate.awf	meta	666f726d6174	6177662d776f726c64
+java-world-deflate.awf	meta	6e61c3af7665	c3a7c3a0
+java-world-deflate.awf	meta	6e756c	610062
+java-world-deflate.awf	meta	73656564	2d3432
+java-world-deflate.awf	schunk	region	3	-3	0	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+java-world-deflate.awf	schunk	region	-1	-1	9000	d1ede08b64dc8a8edd9a0a05b170d65e1f323038dc61dd9a87cfafdaa18b5409
+java-world-deflate.awf	schunk	region	0	0	4	f9194e73f9e9459e3450ea10a179cdf77aafa695beecd3b9344a98d111622243
+java-world-deflate.awf	schunk	region	-2147483648	2147483647	6	45d227c4b297a0ba4ce42738ad3d448e19628a5ecfd509ea861b24a23009d08e
+java-world-deflate.awf	schunk	entities	0	0	3	beb134754910a4b4790c69ab17d3975221f4c534b70c8d6e82b30c165e8c0c09
+java-world-deflate.awf	schunk	poi	2	2	300	718f1c8c4cbbf131799ebf5351f339e4c5b659896e427a8d0ea0cd03d7687506
+java-world-zstd.awf	streams	region,entities,poi
+java-world-zstd.awf	meta	656d6f6a69	f09f9880
+java-world-zstd.awf	meta	656e7669726f6e6d656e74	6e6f726d616c
+java-world-zstd.awf	meta	666f726d6174	6177662d776f726c64
+java-world-zstd.awf	meta	6e61c3af7665	c3a7c3a0
+java-world-zstd.awf	meta	6e756c	610062
+java-world-zstd.awf	meta	73656564	2d3432
+java-world-zstd.awf	schunk	region	3	-3	0	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+java-world-zstd.awf	schunk	region	-1	-1	9000	d1ede08b64dc8a8edd9a0a05b170d65e1f323038dc61dd9a87cfafdaa18b5409
+java-world-zstd.awf	schunk	region	0	0	4	f9194e73f9e9459e3450ea10a179cdf77aafa695beecd3b9344a98d111622243
+java-world-zstd.awf	schunk	region	-2147483648	2147483647	6	45d227c4b297a0ba4ce42738ad3d448e19628a5ecfd509ea861b24a23009d08e
+java-world-zstd.awf	schunk	entities	0	0	3	beb134754910a4b4790c69ab17d3975221f4c534b70c8d6e82b30c165e8c0c09
+java-world-zstd.awf	schunk	poi	2	2	300	718f1c8c4cbbf131799ebf5351f339e4c5b659896e427a8d0ea0cd03d7687506

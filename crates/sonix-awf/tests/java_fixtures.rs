@@ -20,8 +20,8 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use sonix_awf::{
-    ChunkKey, ChunkSource, Compaction, DISK, Image, ObjectName, PersistenceMode, Store, WorldRole,
-    WorldStore,
+    ChunkKey, ChunkSource, Codec, Compaction, DISK, Image, ObjectName, PersistenceMode, Store,
+    WorldFile, WorldRole, WorldStore,
 };
 
 /// Everything one line of `expected.tsv` can say about a store or an image.
@@ -35,6 +35,10 @@ struct Facts {
     deleted: BTreeSet<ChunkKey>,
     /// Metadata as the hex of each string's UTF-8 bytes.
     meta: BTreeMap<String, String>,
+    /// A world file's streams, in the order the file lists them.
+    streams: Option<Vec<String>>,
+    /// A world file's chunks: stream and chunk to its length and the SHA-256 of its bytes.
+    stream_chunks: BTreeMap<(String, ChunkKey), (usize, String)>,
 }
 
 impl Facts {
@@ -69,6 +73,27 @@ impl Facts {
         facts
     }
 
+    fn of_world_file(file: &WorldFile) -> Self {
+        let mut facts = Self {
+            streams: Some(file.stream_names().map(str::to_string).collect()),
+            ..Self::default()
+        };
+        for (key, value) in file.metadata() {
+            facts.meta.insert(hex(key), hex(value));
+        }
+        for name in file.stream_names() {
+            let stream = file.stream(name);
+            for key in stream.keys() {
+                let raw = stream.read(key).unwrap().unwrap();
+                facts.stream_chunks.insert(
+                    (name.to_string(), key),
+                    (raw.len(), ObjectName::of(&raw).to_hex()),
+                );
+            }
+        }
+        facts
+    }
+
     /// The lines `Fixtures.java` writes for the same facts.
     fn to_tsv(&self, name: &str) -> String {
         let mut out = String::new();
@@ -80,8 +105,18 @@ impl Facts {
             let _ = writeln!(out, "{name}\tchain\t{chain}");
             let _ = writeln!(out, "{name}\trollback\t{}", points.join(","));
         }
+        if let Some(streams) = &self.streams {
+            let _ = writeln!(out, "{name}\tstreams\t{}", streams.join(","));
+        }
         for (key, value) in &self.meta {
             let _ = writeln!(out, "{name}\tmeta\t{key}\t{value}");
+        }
+        for ((stream, key), (length, sha)) in &self.stream_chunks {
+            let _ = writeln!(
+                out,
+                "{name}\tschunk\t{stream}\t{}\t{}\t{length}\t{sha}",
+                key.x, key.z
+            );
         }
         for (key, (length, sha)) in &self.chunks {
             let _ = writeln!(out, "{name}\tchunk\t{}\t{}\t{length}\t{sha}", key.x, key.z);
@@ -129,6 +164,15 @@ fn expected(file: &Path) -> BTreeMap<String, Facts> {
             }
             ["meta", name, value] => {
                 facts.meta.insert(name.to_string(), value.to_string());
+            }
+            ["streams", names] => {
+                facts.streams = Some(names.split(',').map(str::to_string).collect());
+            }
+            ["schunk", stream, x, z, length, sha] => {
+                facts.stream_chunks.insert(
+                    (stream.to_string(), key(x, z)),
+                    (length.parse().unwrap(), sha.to_string()),
+                );
             }
             _ => panic!("unexpected line: {line}"),
         }
@@ -251,6 +295,68 @@ fn an_image_rewritten_by_rust_has_the_header_java_wrote() {
     );
 }
 
+#[test]
+fn world_files_written_by_java_read_the_same() {
+    // The zstd file was compressed by zstd-jni, the deflate one by java.util.zip.
+    for codec in ["none", "deflate", "zstd"] {
+        let name = format!("java-world-{codec}.awf");
+        let file = WorldFile::open(&fixtures().join(&name)).unwrap();
+        assert_eq!(
+            Facts::of_world_file(&file),
+            java_expected()[&name],
+            "{name}"
+        );
+        assert_eq!(file.counts(), [("region", 4), ("entities", 1), ("poi", 1)]);
+        assert_eq!(file.metadata()["seed"], "-42");
+    }
+    let head = fs::read(fixtures().join("java-world-zstd.awf")).unwrap();
+    assert!(WorldFile::looks_like(&head));
+    assert!(!WorldFile::looks_like(
+        &fs::read(fixtures().join("java-image.awf")).unwrap()
+    ));
+}
+
+/// The scenario `Fixtures.java` writes into each `java-world-*.awf`.
+fn write_world_file(target: &Path, codec: Codec) {
+    let text = |text: &str| text.as_bytes().to_vec();
+    let mut writer = WorldFile::writer(target, codec).unwrap();
+    for (stream, (x, z), raw) in [
+        ("region", (0, 0), text("zero")),
+        ("region", (-1, -1), pattern(4, 9_000)),
+        ("region", (3, -3), Vec::new()),
+        ("region", (i32::MIN, i32::MAX), text("corner")),
+        ("entities", (0, 0), text("cow")),
+        ("poi", (2, 2), pattern(5, 300)),
+    ] {
+        writer.add(stream, ChunkKey::new(x, z), &raw).unwrap();
+    }
+    let metadata: BTreeMap<String, String> = [
+        ("format", "awf-world"),
+        ("environment", "normal"),
+        ("seed", "-42"),
+        ("na\u{ef}ve", "\u{e7}\u{e0}"),
+        ("nul", "a\u{0}b"),
+        ("emoji", "\u{1F600}"),
+    ]
+    .into_iter()
+    .map(|(key, value)| (key.to_string(), value.to_string()))
+    .collect();
+    writer.finish(&metadata).unwrap();
+}
+
+#[test]
+fn an_uncompressed_world_file_written_by_rust_is_the_file_java_wrote() {
+    // With no codec in the way the whole file is determined by the format: header, chunk data in
+    // the order added, index, trailer.
+    let temp = tempfile::tempdir().unwrap();
+    let rust = temp.path().join("rust-world-none.awf");
+    write_world_file(&rust, Codec::None);
+    assert_eq!(
+        fs::read(&rust).unwrap(),
+        fs::read(fixtures().join("java-world-none.awf")).unwrap()
+    );
+}
+
 /// The encoded length of a string in Java's modified UTF-8.
 fn java_string_length(text: &str) -> usize {
     text.chars()
@@ -368,6 +474,39 @@ fn cross_dir() -> Option<PathBuf> {
     std::env::var_os("SONIX_AWF_CROSS_DIR").map(PathBuf::from)
 }
 
+/// The image and the world files of the scenario, and their facts appended to `expected`.
+fn write_image_and_world_files(dir: &Path, expected: &mut String) {
+    let text = |text: &str| text.as_bytes().to_vec();
+    let metadata: BTreeMap<String, String> = [
+        ("role", "TEMPLATE"),
+        ("environment", "NORMAL"),
+        ("na\u{ef}ve", "\u{e7}\u{e0}"),
+        ("nul", "a\u{0}b"),
+        ("emoji", "\u{1F600}"),
+        ("\u{FFFD}-after-surrogates", "utf-16 order"),
+        ("\u{1F600}-before-fffd", "utf-16 order"),
+    ]
+    .into_iter()
+    .map(|(key, value)| (key.to_string(), value.to_string()))
+    .collect();
+    let image_chunks = chunks([
+        ((0, 0), text("zero")),
+        ((-1, -1), pattern(3, 9_000)),
+        ((3, -3), Vec::new()),
+        ((i32::MIN, i32::MAX), text("corner")),
+    ]);
+    let image = dir.join("rust-image.awf");
+    Image::write(&image, &metadata, &image_chunks).unwrap();
+    expected.push_str(&Facts::of_image(&Image::open(&image).unwrap()).to_tsv("rust-image.awf"));
+
+    for codec in [Codec::None, Codec::Deflate, Codec::Zstd] {
+        let name = format!("rust-world-{codec}.awf");
+        write_world_file(&dir.join(&name), codec);
+        let file = WorldFile::open(&dir.join(&name)).unwrap();
+        expected.push_str(&Facts::of_world_file(&file).to_tsv(&name));
+    }
+}
+
 /// Writes the same scenario `Fixtures.java write` does, for `Fixtures.java verify` to read.
 #[test]
 #[ignore = "needs the Java driver; see tests/fixtures/README.md"]
@@ -448,27 +587,7 @@ fn write_stores_for_the_java_check() {
         .unwrap();
     expected.push_str(&Facts::of_store(&deltas).to_tsv("rust-deltas"));
 
-    let metadata: BTreeMap<String, String> = [
-        ("role", "TEMPLATE"),
-        ("environment", "NORMAL"),
-        ("na\u{ef}ve", "\u{e7}\u{e0}"),
-        ("nul", "a\u{0}b"),
-        ("emoji", "\u{1F600}"),
-        ("\u{FFFD}-after-surrogates", "utf-16 order"),
-        ("\u{1F600}-before-fffd", "utf-16 order"),
-    ]
-    .into_iter()
-    .map(|(key, value)| (key.to_string(), value.to_string()))
-    .collect();
-    let image_chunks = chunks([
-        ((0, 0), text("zero")),
-        ((-1, -1), pattern(3, 9_000)),
-        ((3, -3), Vec::new()),
-        ((i32::MIN, i32::MAX), text("corner")),
-    ]);
-    let image = dir.join("rust-image.awf");
-    Image::write(&image, &metadata, &image_chunks).unwrap();
-    expected.push_str(&Facts::of_image(&Image::open(&image).unwrap()).to_tsv("rust-image.awf"));
+    write_image_and_world_files(&dir, &mut expected);
 
     fs::write(dir.join("rust-expected.tsv"), expected).unwrap();
 }
