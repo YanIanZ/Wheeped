@@ -61,7 +61,7 @@ The secret is a credential: it goes into the file on the server, never into this
 issue or a log that leaves the machine. A backend must be reachable from the proxy only.
 
 Wheeped speaks one Java protocol version, the one named in the startup line. A client on another
-version is refused unless the proxy translates for it.
+version is refused unless the proxy, or a plugin that registers more versions, translates for it.
 
 ## 5. What to look at
 
