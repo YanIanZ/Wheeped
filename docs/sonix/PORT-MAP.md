@@ -83,7 +83,7 @@ differently, or where a Java-only concern has no counterpart yet.
 | Chunk coordinates in an index | `Integer.parseInt`, which also takes non-ASCII digits | `i32` parsing, ASCII only | Same |
 | Blocking I/O on a tick thread | every blocking call refuses to run on a region thread (by thread name) | no check | The check is tied to SourbyCraft's thread names; what replaces it is decided at the engine attach (wave 1) |
 | `GenerationStore.commitAsync` | commits on an executor | not ported | Callers run the blocking commit on the pool they already have |
-| Compressed bytes | `java.util.zip.Deflater` | `flate2` with the Rust backend | Both are zlib streams; each side inflates the other's |
+| Compressed bytes | `java.util.zip.Deflater` | a pure Rust zlib implementation | Both are zlib streams; each side inflates the other's |
 | Error text for a damaged object | `chunk null ...` | `object <name> ...` | The Java text is an accident of passing no key |
 | `Image::open` on a metadata string that is not modified UTF-8 | `UTFDataFormatException` | reported as corrupt | Both refuse the file |
 | `CommitResult.generation` | `long`, `-1` when the world layer had nothing to commit | `u64` | The `-1` case belongs to `AwfWorld`, which is not ported; it will be an `Option` there |
