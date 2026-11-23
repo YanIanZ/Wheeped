@@ -148,7 +148,13 @@ already provides before a port is planned.
 
 ## Open questions
 
-1. Can a chunk saved by a 26.2 server be loaded by the 26.3 base? Nothing here answers that yet.
+1. Can a chunk saved by a 26.2 server be loaded by the 26.3 base? A first reading, 2026-11-23, with
+   a scratch test that is not in the repository: the overworld region store of a SourbyCraft 26.2
+   test server (529 chunks, data version 4903 against the base's 5023) opened in `sonix-awf` with
+   every object verified, and the base's chunk parser (`ChunkData::internal_from_bytes`) took all
+   529 without an error. That shows the bytes parse. It does not show that such a world plays
+   correctly: only one of those chunks was fully generated, no data upgrade was applied, and nothing
+   was loaded into a running server.
 2. A Wureta island server holds one world per island. Several server-wide lookups in the base walk
    the world list. How that behaves with thousands of worlds is unmeasured.
 3. Paper serializes an item with `ItemStack.serializeAsBytes`; MultiProfile stores those bytes as
