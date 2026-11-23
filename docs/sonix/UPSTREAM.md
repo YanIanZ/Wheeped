@@ -71,11 +71,14 @@ jobs are skipped in this repository. Pull request checks have run here; a push t
 without waiting for the test matrix and publishes nothing. [TRYING-A-BUILD.md](TRYING-A-BUILD.md)
 says how to use it.
 
-Two of Pumpkin's jobs are red at the base commit `a49be4bee` on Pumpkin's own CI, and for the same
-reason here: "GameTest and Bot Harness" (a panic in the bot run: `air is not a valid block for
-DaylightDetectorLikeProperties`) and "Test (Linux ARM64)". They say nothing about a Wheeped change
-until an upstream merge brings the fix. While a test job is red, the release build at the end of
-`rust.yml` is skipped, which is the reason for the separate build workflow.
+Pumpkin's "GameTest and Bot Harness" job is unstable at the base commit `a49be4bee`. On Pumpkin's own
+run for that commit it failed ("Cancelled snow formation must leave all four positions unchanged").
+Here, on 2026-11-23 and on changes that do not touch the server, it passed once and failed twice
+with a panic in gameplay code (`air is not a valid block for DaylightDetectorLikeProperties`, thread
+`Simulation-0`). Pumpkin's run for that commit also lost "Test (Linux ARM64)" to a killed runner
+(exit code 143). A red result of these jobs says little about a Wheeped change; run them again
+before reading anything into it. The release build at the end of `rust.yml` runs only when every
+test job of the run passed, which is the reason for the separate build workflow.
 
 ## Sending a change to Pumpkin
 

@@ -37,8 +37,8 @@ From a terminal: `gh workflow run wheeped-build.yml --repo YanIanZ/Wheeped --ref
 `gh run download --repo YanIanZ/Wheeped --name wheeped-X64-v3-Linux` once it has finished. A full
 build of this kind takes long, often more than half an hour.
 
-The big CI workflow also has a release build at its end, but it runs only when every test job
-passed, and two of Pumpkin's own are failing at the moment ([UPSTREAM.md](UPSTREAM.md)).
+The big CI workflow also has a release build at its end, but only for pushes and manual runs, and
+only when every test job of that run passed ([UPSTREAM.md](UPSTREAM.md) has the state of those jobs).
 
 ## 3. Start it
 
