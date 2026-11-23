@@ -57,6 +57,8 @@ drop a Wheeped edit without a conflict).
 | `crates/pumpkin/src/main.rs` | Startup banner and support links | Names the fork and the base; sends issue reports to this repository, not to Pumpkin |
 | `crates/pumpkin-config/src/telemetry.rs` | Default `enabled` true to false | The endpoint is Pumpkin's; a fork does not report into it unasked |
 | `crates/pumpkin-config/src/update_checker.rs` | Default `enabled` true to false | It checks Pumpkin's releases, which are not Wheeped builds |
+| `Cargo.toml`, `Cargo.lock` | Workspace member `crates/sonix-awf` and its lock entry | A new crate has to be listed |
+| `typos.toml` | `crates/sonix-awf/tests/fixtures/java-b57` excluded | Hash-linked binary fixtures full of hex names |
 | `.github/workflows/rust.yml` | Push trigger `master` to `main` | `main` is the fork's branch. The canary release job still asks for `master`, so it never runs from `main` |
 | `.github/workflows/release.yml`, `nix.yml`, `sync-wit.yml` | Jobs limited to `Pumpkin-MC/Pumpkin` | They need Pumpkin's secrets or serve Pumpkin's packaging |
 

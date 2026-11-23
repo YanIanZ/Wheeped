@@ -29,8 +29,9 @@ spawners, redstone, hoppers, mob AI), and whether worlds saved by SourbyCraft 26
 
 | Subsystem | Comes from (SourbyCraft) | Rust home | Status |
 | :-- | :-- | :-- | :-- |
-| AWF storage core: content-addressed objects, atomic generations, world store, `.awf` files | `awf/*.java` | `crates/sonix-awf` | **in progress**, see [PORT-MAP.md](PORT-MAP.md) |
-| AWF world layer: copy-on-write worlds over templates, save pipeline | `awf/AwfWorld.java`, `LayeredSource` | `crates/sonix-awf` | planned |
+| AWF storage core: content-addressed objects, atomic generations, world store, `.awf` version 1 image | `awf/*.java` | `crates/sonix-awf` | **implemented**, held against the Java original; used by nothing in the server yet. See [PORT-MAP.md](PORT-MAP.md) |
+| `.awf` version 2 world file and the zstd codec | `awf/AwfWorldFile.java`, `Compression.java` | `crates/sonix-awf` | planned |
+| AWF world layer: copy-on-write worlds over templates, save pipeline | `awf/AwfWorld.java` | `crates/sonix-awf` | planned |
 | Engine attach: chunks of a managed world read and written through AWF instead of region files | `AwfRegionStorage`, `AwfEngine`, feature patch 0021 | a chunk I/O backend in `pumpkin-world` | planned |
 | Runtime worlds: create, load, save, unload, delete, templates, instances, registry | `awf/world/` (`AuroraWorlds`) | to be named | planned |
 | Redis world backend | `awf/redis/` | to be named | planned |
@@ -63,10 +64,11 @@ carry over unchanged are:
   reappear from the template underneath.
 - **Template isolation.** An instance never writes its template.
 
-The Rust store reads and writes the same bytes on disk as the Java one (ADR-005, proposed). That
-makes the storage layer portable between the two servers. It does not make a 26.2 world playable on
-a 26.3 server: the chunk payload inside each object is vanilla NBT of the Minecraft version that
-wrote it, and upgrading that payload is a separate, unproven step.
+The Rust store reads and writes the Java store's on-disk format (ADR-005, proposed), and each side
+has opened, verified and committed on top of stores the other wrote (`crates/sonix-awf/tests/fixtures/README.md`).
+That makes the storage layer portable between the two servers. It does not make a 26.2 world
+playable on a 26.3 server: the chunk payload inside each object is vanilla NBT of the Minecraft
+version that wrote it, and upgrading that payload is a separate, unproven step.
 
 What changes in Wheeped is the attach point. SourbyCraft hooks AWF under Paper's
 `RegionFileStorage` and has to refuse blocking I/O on region threads. Here the store sits behind

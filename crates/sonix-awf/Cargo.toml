@@ -1,0 +1,24 @@
+[package]
+name = "sonix-awf"
+version = "0.1.0"
+description = "Aurora World Fabric storage core: content-addressed chunk objects and atomic generations."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+# Java's modified UTF-8, which `.awf` headers are written in.
+pumpkin-nbt.workspace = true
+
+flate2.workspace = true
+hex.workspace = true
+indexmap.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true
