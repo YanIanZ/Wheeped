@@ -28,6 +28,8 @@ on:
 jobs:
   check-flake:
     name: Validate Flake & Build
+    # Pumpkin's Nix packaging check. Wheeped does not ship through Nix.
+    if: github.repository == 'Pumpkin-MC/Pumpkin'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

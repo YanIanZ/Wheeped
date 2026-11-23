@@ -52,14 +52,17 @@ drop a Wheeped edit without a conflict).
 | `crates/pumpkin/src/main.rs` | Startup banner and support links | Names the fork and the base; sends issue reports to this repository, not to Pumpkin |
 | `crates/pumpkin-config/src/telemetry.rs` | Default `enabled` true to false | The endpoint is Pumpkin's; a fork does not report into it unasked |
 | `crates/pumpkin-config/src/update_checker.rs` | Default `enabled` true to false | It checks Pumpkin's releases, which are not Wheeped builds |
+| `.github/workflows/rust.yml` | Push trigger `master` to `main` | `main` is the fork's branch; a mirror push should not build |
+| `.github/workflows/release.yml`, `nix.yml`, `sync-wit.yml` | Jobs limited to `Pumpkin-MC/Pumpkin` | They need Pumpkin's secrets or serve Pumpkin's packaging |
 
 ## Workflows
 
 The fork carries Pumpkin's GitHub workflows. GitHub keeps workflows disabled on a new fork until the
-owner enables them. `docker.yml` and `nightly.yml` already run only in `Pumpkin-MC/Pumpkin`.
-`release.yml` and `sync-wit.yml` need secrets this fork does not have and would fail if triggered;
-they are untouched for now and should be limited to the upstream repository before workflows are
-enabled here.
+owner enables them. `rust.yml` (formatting, lints, tests, builds) runs for pull requests and for
+pushes to `main`; `typos.yml` runs on every push. `docker.yml` and `nightly.yml` came limited to
+`Pumpkin-MC/Pumpkin`, and `release.yml`, `nix.yml` and `sync-wit.yml` are limited to it here: their
+jobs are skipped in this repository. None of this has run yet. [TRYING-A-BUILD.md](TRYING-A-BUILD.md)
+says how to get a binary out of it.
 
 ## Sending a change to Pumpkin
 

@@ -3,7 +3,8 @@ name: Cargo Build, Test, and Linting
 on:
   push:
     branches:
-      - master
+      # Wheeped: `main` is the fork's branch; `master` only mirrors Pumpkin.
+      - main
   pull_request:
   workflow_dispatch:
     inputs:
