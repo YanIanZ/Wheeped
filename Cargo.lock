@@ -4464,6 +4464,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "sonix-awf"
+version = "0.1.0"
+dependencies = [
+ "flate2",
+ "hex",
+ "indexmap",
+ "pumpkin-nbt",
+ "sha2 0.11.1",
+ "tempfile",
+ "thiserror 2.0.21",
+ "tracing",
+]
+
+[[package]]
 name = "spin"
 version = "0.9.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
