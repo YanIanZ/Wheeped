@@ -46,19 +46,63 @@ No dependency on a running server. Target crate: `crates/sonix-awf`.
 
 | Unit (Java) | Lines | What it is | Rust module | State |
 | :-- | --: | :-- | :-- | :-- |
-| `ChunkKey` | 25 | chunk position, ordering, packing | `key` | open |
-| `ChunkSource`, `LayeredSource` | 44 | where serialized chunks are read from | `source` | open |
-| `WorldRole`, `PersistenceMode` | 60 | roles and commit modes | `role` | open |
-| `Compression` | 92 | codec ids, deflate, zstd | `codec` | open |
-| `Durability` | 130 | file and directory forces, atomic rename | `durability` | open |
-| `AwfFile` | 260 | `.awf` version 1 image | `image` | open |
-| `ObjectStore` | 272 | content-addressed chunk objects | `object_store` | open |
-| `GenerationStore` | 598 | atomic generation commits, manifests 1 and 2 | `generation` | open |
-| `AwfStore` | 69 | the contract every backend keeps | `store` | open |
-| `AwfWorldStore` | 613 | chunk index and deltas over the two stores | `world_store` | open |
+| `ChunkKey` | 25 | chunk position, ordering, packing | `key` | done ¹ |
+| `ChunkSource`, `LayeredSource` | 44 | where serialized chunks are read from | `source` | done ¹ |
+| `WorldRole`, `PersistenceMode` | 60 | roles and commit modes | `role` | done ¹ |
+| `Durability` | 130 | file and directory forces, atomic rename | `durability` | done ¹ |
+| `AwfFile` | 260 | `.awf` version 1 image, and its deflate codec | `image`, `codec` | done ¹ ² |
+| `ObjectStore` | 272 | content-addressed chunk objects | `object_store` | done ¹ ² |
+| `GenerationStore` | 598 | atomic generation commits, manifests 1 and 2 | `generation` | done ¹ ² |
+| `AwfStore` | 69 | the contract every backend keeps | `store` | done ¹ |
+| `AwfWorldStore` | 613 | chunk index and deltas over the two stores | `world_store` | done ¹ ² |
+| `Compression` | 92 | codec ids and zstd, used by the version 2 world file | `codec` | open |
 | `AwfWorldFile` | 288 | `.awf` version 2 portable world file | `world_file` | open |
 | `AwfWorld` | 574 | copy-on-write world, save pipeline, metrics | `world` | open |
 | `AwfBackend`, `AwfRegistry`, `AwfMetrics`, `LatencyRecorder` | 227 | backend selection and counters | to be placed | open |
+
+¹ Unit tests in the module, ported from the Java tests of the same unit (`GenerationStoreTest`,
+`AwfWorldStoreTest`, `AwfFileTest`, `AwfDeltaGenerationTest`, `AwfRollbackTest`, and the store-level
+cases of `AwfDurabilityTest` and `AwfCompactionLifecycleTest`): 81 tests.
+
+² Held against the Java original in both directions on 2026-11-23, as
+`crates/sonix-awf/tests/fixtures/README.md` describes: Rust reads stores and an image written by the
+Build 57 classes (8 tests, part of `cargo test`), and the Java classes opened, verified and
+committed on top of stores written by Rust (run by hand, needs a JVM).
+
+What "done" does not cover: nothing in the server calls this crate yet, no world has been loaded
+through it, and no store from a live server has been opened with it.
+
+### Differences from the Java original
+
+Deliberate, and small. Each is a place where the two would treat a damaged or unusual input
+differently, or where a Java-only concern has no counterpart yet.
+
+| Where | Java | Rust | Why |
+| :-- | :-- | :-- | :-- |
+| Numbers in `CURRENT`, manifests and generation directory names | any Unicode decimal digit (`Character.isDigit`) | ASCII digits only | No writer produces others; refusing them is the stricter reading of a damaged file |
+| Chunk coordinates in an index | `Integer.parseInt`, which also takes non-ASCII digits | `i32` parsing, ASCII only | Same |
+| Blocking I/O on a tick thread | every blocking call refuses to run on a region thread (by thread name) | no check | The check is tied to SourbyCraft's thread names; what replaces it is decided at the engine attach (wave 1) |
+| `GenerationStore.commitAsync` | commits on an executor | not ported | Callers run the blocking commit on the pool they already have |
+| Compressed bytes | `java.util.zip.Deflater` | `flate2` with the Rust backend | Both are zlib streams; each side inflates the other's |
+| Error text for a damaged object | `chunk null ...` | `object <name> ...` | The Java text is an accident of passing no key |
+| `Image::open` on a metadata string that is not modified UTF-8 | `UTFDataFormatException` | reported as corrupt | Both refuse the file |
+| `CommitResult.generation` | `long`, `-1` when the world layer had nothing to commit | `u64` | The `-1` case belongs to `AwfWorld`, which is not ported; it will be an `Option` there |
+
+### Found in the Java original while porting
+
+Not fixed here: the port keeps the original's behaviour, and changing it is the owner's call.
+
+- **A generation whose commit failed can later count as committed.** If a commit fails after its
+  directory is published under its final name (a failed force of `generations/`, or any failure
+  around the pointer) and the server keeps running, the next commit takes the following number and
+  then treats the leftover directory as a committed generation: it takes a place in retention, so a
+  real generation is deleted one commit early, and it is listed as a rollback point although its
+  objects were collected. Reproduced on the Build 57 classes on 2026-11-23 with retention 2:
+  commit 1 succeeds, commit 2 fails at the published stage, commit 3 succeeds; the retained
+  generations are then 3 and the failed 2, generation 1 is gone, and a rollback to 2 fails with a
+  missing object. A restart does not clear it, because the leftover's number is below the current
+  one. Removing uncommitted generation directories at the start of a commit, as an open already
+  does, would close it.
 
 ## Wave 1: attach to the engine
 

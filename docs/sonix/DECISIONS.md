@@ -46,15 +46,19 @@ Consequences: A native plugin must be rebuilt with every server build; the loade
 mismatched `PLUGIN_API_VERSION`, but same-version builds from different commits are not safe to mix.
 A crash in a native plugin is a crash of the server.
 
-## ADR-005: The AWF store is byte-compatible with SourbyCraft's
+## ADR-005: The AWF store keeps SourbyCraft's on-disk format
 Status: proposed
 Context: The network's island worlds and templates are AWF stores written by SourbyCraft. Even if
 Wheeped ended up with another native format, an importer would have to read these.
-Decision: `sonix-awf` reads and writes the FILE backend's formats exactly: objects, generations,
-manifest formats 1 and 2, index and delta blobs, `.awf` version 1 and 2 files.
-Consequences: A store can be opened by either server. Compatibility is at the storage layer only:
-the chunk payload is vanilla NBT of the writer's Minecraft version (26.2 for SourbyCraft), and
-loading it on 26.3 is separate work that nobody has shown to be possible yet.
+Decision: `sonix-awf` reads and writes the FILE backend's format: objects, generations, manifest
+formats 1 and 2, index and delta blobs, `.awf` version 1 and 2 files. The format, not every byte:
+pointer, manifest, index and delta files come out identical, while an object's compressed bytes may
+differ because the two zlib implementations compress differently. Nothing in the format depends on
+that: an object is named by the hash of its uncompressed bytes.
+Consequences: A store can be opened by either server, and each can commit on top of the other's
+generations. Compatibility is at the storage layer only: the chunk payload is vanilla NBT of the
+writer's Minecraft version (26.2 for SourbyCraft), and loading it on 26.3 is separate work that
+nobody has shown to be possible yet.
 
 ## ADR-006: A Java bridge only as a transition aid
 Status: proposed

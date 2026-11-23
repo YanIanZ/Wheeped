@@ -30,7 +30,8 @@ is the one in `crates/sonix-*`. Add a term when a unit brings it.
 | index | The full map from chunk key to object name for one generation. | `index` blob | `index` |
 | delta | The entries that changed against the base generation. | `delta` blob | `delta` |
 | tombstone | Index value `-`: the chunk was deleted and shadows the base. | `TOMBSTONE` | `Entry::Deleted` |
-| drop | Delta value `drop`: the chunk leaves the index and the base shows through again. | `DROP` | `DeltaEntry::Drop` |
+| entry | What an index says about one chunk: an object, or a deletion. | index value (`String`) | `Entry` |
+| drop | Delta value `drop`: the chunk leaves the index and the base shows through again. | `DROP` | `Change::Drop` (private) |
 | retention | How many committed generations are kept as rollback points. | `retainedGenerations` | `retained_generations` |
 | compaction | Writing a full index to end a delta chain. | `compact()` | `compact()` |
 | world store | A world's committed chunks: an index per generation plus objects. | `AwfWorldStore` | `WorldStore` |
@@ -39,7 +40,9 @@ is the one in `crates/sonix-*`. Add a term when a unit brings it.
 | world file | The `.awf` version 2 file: a whole portable world, several streams, CRC32C. | `AwfWorldFile` | `WorldFile` |
 | world role | `VANILLA`, `VIRTUAL`, `TEMPLATE`, `INSTANCE`, `READ_ONLY`, `TEMPORARY`. | `WorldRole` | `WorldRole` |
 | persistence mode | `FULL`, `INCREMENTAL`, `CHECKPOINT`, `READ_ONLY`. | `PersistenceMode` | `PersistenceMode` |
-| durability | The seam for file force, directory force and atomic rename. | `Durability` | `Durability` |
+| durability | The seam for file force, directory force and atomic rename. | `Durability` | `Durability`, `Disk`, `DISK` |
+| stage | A point in the commit sequence where a test can inject a crash. | `GenerationStore.Stage` | `Stage`, `StageHook` |
+| compaction policy | Whether commits may write deltas, and after how many hops a full index is written. | `AwfWorldStore.Compaction` | `Compaction` |
 | template | An immutable store that instances share. | `TEMPLATE` role | same |
 | instance | A copy-on-write world over a template. | `INSTANCE` role | same |
 
